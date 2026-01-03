@@ -3,6 +3,7 @@ Brain OS MCP Server
 Entry point for FastMCP CLI with proper path handling.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -13,6 +14,7 @@ sys.path.insert(0, str(project_root))
 # Import FastMCP and tools
 from fastmcp import FastMCP
 from pydantic import Field
+from starlette.responses import JSONResponse
 
 # Import with lazy loading to avoid startup issues
 def _get_queries():
@@ -23,8 +25,24 @@ def _get_schemas():
     from src.utils.schemas import BubbleCreate
     return BubbleCreate
 
-# Create FastMCP instance
-mcp = FastMCP("Brain OS")
+# Configure authentication for remote access (required by Claude Web)
+AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN")
+
+# Create FastMCP instance with authentication and stateless mode
+# Stateless mode is required for load balancer/proxy deployments (Coolify, Cloudflare, etc.)
+if AUTH_TOKEN:
+    from fastmcp.server.auth import BearerTokenAuth
+    auth = BearerTokenAuth(token=AUTH_TOKEN)
+    mcp = FastMCP("Brain OS", auth=auth, stateless_http=True)
+else:
+    # Local development without auth
+    mcp = FastMCP("Brain OS", stateless_http=True)
+
+# Add health check endpoint
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request) -> JSONResponse:
+    """Health check endpoint for deployment monitoring."""
+    return JSONResponse({"status": "healthy", "service": "brainos-mcp"})
 
 @mcp.tool
 async def create_memory(

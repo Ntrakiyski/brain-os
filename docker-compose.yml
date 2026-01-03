@@ -24,6 +24,9 @@ services:
       - OPENROUTER_CREATIVE_MODEL=${OPENROUTER_CREATIVE_MODEL:-anthropic/claude-sonnet-4}
       - OPENROUTER_PLANNING_MODEL=${OPENROUTER_PLANNING_MODEL:-anthropic/claude-opus-4}
 
+      # MCP Authentication (required for remote access)
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+
       - MCP_PORT=${MCP_PORT:-9131}
       - PYTHONUNBUFFERED=1
     depends_on:
