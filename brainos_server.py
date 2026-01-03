@@ -31,8 +31,17 @@ AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN")
 # Create FastMCP instance with authentication and stateless mode
 # Stateless mode is required for load balancer/proxy deployments (Coolify, Cloudflare, etc.)
 if AUTH_TOKEN:
-    from fastmcp.server.auth import BearerTokenAuth
-    auth = BearerTokenAuth(token=AUTH_TOKEN)
+    from fastmcp.server.auth import StaticTokenVerifier
+    # StaticTokenVerifier validates bearer tokens against a predefined dict
+    # Format: {token: {client_id, scopes, expires_at (optional)}}
+    auth = StaticTokenVerifier(
+        tokens={
+            AUTH_TOKEN: {
+                "client_id": "brainos-client",
+                "scopes": ["mcp"]
+            }
+        }
+    )
     mcp = FastMCP("Brain OS", auth=auth, stateless_http=True)
 else:
     # Local development without auth
