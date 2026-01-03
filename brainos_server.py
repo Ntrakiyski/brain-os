@@ -25,8 +25,8 @@ def _get_schemas():
     from src.utils.schemas import BubbleCreate
     return BubbleCreate
 
-# Create FastMCP instance with stateless mode (required for proxy/load balancer)
-mcp = FastMCP("Brain OS", stateless_http=True)
+# Create FastMCP instance
+mcp = FastMCP("Brain OS")
 
 # Add health check endpoint
 @mcp.custom_route("/health", methods=["GET"])
@@ -120,3 +120,34 @@ async def visualize_memories(limit: int = Field(default=50, ge=1, le=200)) -> st
         return "".join(output)
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+# =============================================================================
+# SERVER ENTRY POINT
+# =============================================================================
+
+if __name__ == "__main__":
+    import logging
+
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+
+    # Get port from environment or use default
+    port = int(os.getenv("MCP_PORT", 9131))
+    host = os.getenv("MCP_HOST", "0.0.0.0")
+
+    logger.info(f"Starting Brain OS MCP Server on {host}:{port}...")
+    logger.info("Available tools:")
+    logger.info("  - create_memory: Store a new memory in the Synaptic Graph")
+    logger.info("  - get_memory: Retrieve memories by search query")
+    logger.info("  - get_all_memories: Retrieve all memories")
+    logger.info("  - list_sectors: List all cognitive sectors")
+    logger.info("  - visualize_memories: Generate memory distribution chart")
+    logger.info(f"Health check: http://{host}:{port}/health")
+
+    # Run the server directly (compatible with Coolify HTTPS termination)
+    mcp.run(transport="http", host=host, port=port)

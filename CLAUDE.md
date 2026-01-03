@@ -40,11 +40,13 @@ docker compose up -d
 # Neo4j Browser available at: http://localhost:7474
 # Default credentials: neo4j / brainos_password_123
 
-# Run main MCP server with stdio (default)
+# Run main MCP server with stdio (FastMCP CLI)
 fastmcp run brainos_server.py:mcp
 
-# Run with HTTP transport for remote access (port 9131)
-fastmcp run brainos_server.py:mcp --transport http --host 0.0.0.0 --port 9131
+# Run with HTTP transport directly via Python (recommended for Coolify/HTTPS)
+python brainos_server.py
+# Or with custom port:
+MCP_PORT=8000 python brainos_server.py
 
 # Run with Docker
 docker compose up --build
@@ -197,10 +199,11 @@ Phase 1 successfully established the foundational infrastructure:
 ### HTTP Deployment Notes:
 - **Local**: Works perfectly - `http://localhost:9131/mcp`
 - **Docker Compose**: Works locally with both services (brainos + neo4j)
-- **Coolify/Cloud**: HTTP works; HTTPS requires proxy configuration for SSE (Server-Sent Events)
-  - MCP protocol requires `text/event-stream` content-type
-  - Standard proxies may strip SSE headers
-  - Solution: Use HTTP or configure proxy to pass SSE headers
+- **Coolify/Cloud**: **Now supports HTTPS** - Server runs directly via `mcp.run()` for proxy compatibility
+  - MCP protocol uses `text/event-stream` content-type
+  - Coolify terminates HTTPS and forwards to container as HTTP
+  - Server is configured for proxy-friendly operation (direct Python mode, not CLI)
+  - Based on chrome-mcp pattern proven to work with Coolify HTTPS
 
 See `docs/project/phase1/` for complete Phase 1 documentation and `docs/project/full_project_idea.md` for the master specification.
 
@@ -397,3 +400,5 @@ curl http://localhost:9131/mcp         # Should return 406 (expected without SSE
 | Neo4j connection refused | Ensure `docker compose up -d` is running first |
 | MCP tools not visible | Check FastMCP server logs for errors |
 | Port 8000 already in use | Changed to port 9131 - update local configs if needed |
+| HTTPS returns "no available server" | Fixed - server now runs via `mcp.run()` for proxy compatibility |
+| Coolify deployment fails | Ensure environment variables are set in Coolify, not in `.env` file |

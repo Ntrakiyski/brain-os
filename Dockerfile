@@ -1,30 +1,21 @@
-# Multi-stage Dockerfile for BrainOS MCP Server
-FROM python:3.14-slim AS builder
+# BrainOS MCP Server - Optimized for HTTPS/Proxy (Coolify compatible)
+# Based on chrome-mcp pattern that works with HTTPS termination
 
-# Install uv
-RUN pip install --no-cache-dir uv
-
-WORKDIR /app
-
-# Copy dependency files
-COPY pyproject.toml ./
-
-# Install dependencies using uv (creates virtual environment)
-RUN uv sync --frozen --no-dev
-
-# Final stage - smaller image
 FROM python:3.14-slim
 
 WORKDIR /app
 
-# Install uv for runtime
-RUN pip install --no-cache-dir uv
+# Install pip packages
+RUN pip install --no-cache-dir --upgrade pip
+
+# Copy dependency files
+COPY pyproject.toml ./
+
+# Install dependencies using pip (simpler, more compatible with proxies)
+RUN pip install --no-cache-dir fastmcp>=2.14.2 neo4j>=5.25.0 python-dotenv>=1.0.0 pydantic>=2.10.0 groq>=0.11.0 openai>=1.57.0
 
 # Copy the entire project
 COPY . .
-
-# Install dependencies (no dev dependencies)
-RUN uv sync --frozen --no-dev
 
 # Expose the HTTP MCP port
 EXPOSE 9131
@@ -33,5 +24,5 @@ EXPOSE 9131
 ENV MCP_PORT=9131
 ENV PYTHONUNBUFFERED=1
 
-# Run the MCP server with HTTP transport
-CMD ["uv", "run", "--no-dev", "fastmcp", "run", "brainos_server.py:mcp", "--transport", "http", "--host", "0.0.0.0", "--port", "9131"]
+# Run the MCP server directly via Python (like chrome-mcp - more compatible with HTTPS)
+CMD ["python", "brainos_server.py"]
