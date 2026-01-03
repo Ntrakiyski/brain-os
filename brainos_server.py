@@ -45,16 +45,20 @@ async def create_memory(
 
 @mcp.tool
 async def get_memory(query: str = Field(description="Search term"), limit: int = Field(default=10)) -> str:
-    """Retrieve memories from the Synaptic Graph."""
+    """Retrieve memories from the Synaptic Graph with full content."""
     try:
         _, search_bubbles, _ = _get_queries()
         results = await search_bubbles(query, limit)
         if not results:
             return f"No memories found for '{query}'"
-        output = [f"Found {len(results)} memories:\n"]
+        output = [f"Found {len(results)} memories matching '{query}':\n\n"]
         for i, b in enumerate(results, 1):
-            output.append(f"{i}. [{b.sector}] {b.content[:80]}...")
-        return "\n".join(output)
+            output.append(f"{i}. [{b.sector}] Salience: {b.salience:.2f}\n")
+            output.append(f"   Created: {b.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            output.append(f"   Content: {b.content}\n")
+            output.append(f"   Source: {b.source}\n")
+            output.append("-" * 50 + "\n")
+        return "".join(output)
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -70,20 +74,20 @@ async def list_sectors() -> str:
 
 @mcp.tool
 async def get_all_memories(limit: int = Field(default=50, ge=1, le=200)) -> str:
-    """Retrieve all memories from the Synaptic Graph."""
+    """Retrieve all memories from the Synaptic Graph with full content."""
     try:
         _, _, get_all_bubbles = _get_queries()
         results = await get_all_bubbles(limit)
         if not results:
             return "No memories stored yet."
-        sector_counts = {}
-        for b in results:
-            sector_counts[b.sector] = sector_counts.get(b.sector, 0) + 1
-        output = [f"Total: {len(results)}\nSector Distribution:\n"]
-        for sector, count in sorted(sector_counts.items()):
-            pct = (count / len(results)) * 100
-            bar = "█" * int(pct / 5)
-            output.append(f"  {sector:12} │ {bar} {count} ({pct:.1f}%)\n")
+
+        output = [f"Total: {len(results)} memories\n\n"]
+        for i, b in enumerate(results, 1):
+            output.append(f"{i}. [{b.sector}] Salience: {b.salience:.2f}\n")
+            output.append(f"   Created: {b.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            output.append(f"   Content: {b.content}\n")
+            output.append(f"   Source: {b.source}\n")
+            output.append("-" * 50 + "\n")
         return "".join(output)
     except Exception as e:
         return f"Error: {str(e)}"
