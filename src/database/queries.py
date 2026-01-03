@@ -75,7 +75,7 @@ async def search_bubbles(query: str, limit: int = 10) -> list[BubbleResponse]:
 
     cypher = """
     MATCH (b:Bubble)
-    WHERE b.content CONTAINS $search_query
+    WHERE toLower(b.content) CONTAINS toLower($search_query)
     AND b.valid_to IS NULL
     RETURN b
     ORDER BY b.created_at DESC
