@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: brainos-server
     ports:
-      - "${MCP_PORT:-8000}:8000"  # HTTP MCP endpoint
+      - "${MCP_PORT:-9131}:9131"  # HTTP MCP endpoint
     environment:
       # Neo4j connection (internal network)
       - NEO4J_URI=bolt://neo4j:7687
@@ -24,7 +24,7 @@ services:
       - OPENROUTER_CREATIVE_MODEL=${OPENROUTER_CREATIVE_MODEL:-anthropic/claude-sonnet-4}
       - OPENROUTER_PLANNING_MODEL=${OPENROUTER_PLANNING_MODEL:-anthropic/claude-opus-4}
 
-      - MCP_PORT=${MCP_PORT:-8000}
+      - MCP_PORT=${MCP_PORT:-9131}
       - PYTHONUNBUFFERED=1
     depends_on:
       - neo4j
@@ -32,7 +32,7 @@ services:
       - brainos-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9131/').read()"]
       interval: 30s
       timeout: 10s
       start_period: 60s
