@@ -33,9 +33,9 @@ EXPOSE 9131
 ENV MCP_PORT=9131
 ENV PYTHONUNBUFFERED=1
 
-# Health check - just check if server responds (404 is OK, means it's running)
+# Health check - check MCP endpoint (returns 406 without proper headers, but means it's running)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9131/', timeout=5)"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9131/mcp', timeout=5)"
 
 # Run the MCP server with HTTP transport
 CMD ["uv", "run", "--no-dev", "fastmcp", "run", "brainos_server.py:mcp", "--transport", "http", "--host", "0.0.0.0", "--port", "9131"]

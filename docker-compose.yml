@@ -32,7 +32,7 @@ services:
       - brainos-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9131/').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9131/mcp').read()"]
       interval: 30s
       timeout: 10s
       start_period: 60s
