@@ -34,3 +34,4 @@ Thumbs.db
 # Database
 *.db
 neo4j/
+nul
