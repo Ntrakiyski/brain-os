@@ -36,7 +36,7 @@ async def create_memory(
     """Store a new memory in the Synaptic Graph."""
     try:
         BubbleCreate = _get_schemas()
-        upsert_bubble, _ = _get_queries()
+        upsert_bubble, _, _ = _get_queries()
         bubble_data = BubbleCreate(content=content, sector=sector, source=source, salience=salience)
         result = await upsert_bubble(bubble_data)
         return f"Memory stored! ID: {result.id}, Sector: {result.sector}, Created: {result.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
@@ -47,7 +47,7 @@ async def create_memory(
 async def get_memory(query: str = Field(description="Search term"), limit: int = Field(default=10)) -> str:
     """Retrieve memories from the Synaptic Graph."""
     try:
-        _, search_bubbles = _get_queries()
+        _, search_bubbles, _ = _get_queries()
         results = await search_bubbles(query, limit)
         if not results:
             return f"No memories found for '{query}'"
