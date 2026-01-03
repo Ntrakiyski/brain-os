@@ -16,7 +16,6 @@ docs
 
 # Virtual environments
 .venv
-uv.lock
 
 # IDE & Editor
 .claude/
