@@ -49,7 +49,7 @@ async def create_memory(
     try:
         # Lazy imports
         BubbleCreate = _get_schemas()
-        upsert_bubble, _ = _get_queries()
+        upsert_bubble, _, _ = _get_queries()
 
         # Validate and create the bubble
         bubble_data = BubbleCreate(
@@ -86,7 +86,7 @@ async def get_memory(
     """
     try:
         # Lazy imports
-        _, search_bubbles = _get_queries()
+        _, search_bubbles, _ = _get_queries()
 
         results = await search_bubbles(query, limit)
 
