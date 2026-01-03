@@ -1,0 +1,76 @@
+services:
+  # BrainOS MCP Server (HTTP transport for Claude Web)
+  brainos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: brainos-server
+    ports:
+      - "${MCP_PORT:-8000}:8000"  # HTTP MCP endpoint
+    environment:
+      # Neo4j connection (internal network)
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+
+      # Groq API (Fast Actions)
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_QUICK_MODEL=${GROQ_QUICK_MODEL:-openai/gpt-oss-120b}
+
+      # OpenRouter API (Deep Thinking)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_RESEARCHING_MODEL=${OPENROUTER_RESEARCHING_MODEL:-anthropic/claude-sonnet-4}
+      - OPENROUTER_THINKINIG_MODEL=${OPENROUTER_THINKINIG_MODEL:-anthropic/claude-sonnet-4}
+      - OPENROUTER_CREATIVE_MODEL=${OPENROUTER_CREATIVE_MODEL:-anthropic/claude-sonnet-4}
+      - OPENROUTER_PLANNING_MODEL=${OPENROUTER_PLANNING_MODEL:-anthropic/claude-opus-4}
+
+      - MCP_PORT=${MCP_PORT:-8000}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - brainos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # Neo4j Database
+  neo4j:
+    image: neo4j:5.25-community
+    container_name: brainos-neo4j
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"  # HTTP (Neo4j Browser) - optional for external access
+      - "${NEO4J_BOLT_PORT:-7687}:7687"  # Bolt - internal only typically
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-brainos_password_123}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - brainos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  brainos-network:
+    driver: bridge
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
