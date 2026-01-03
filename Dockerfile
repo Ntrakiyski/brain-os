@@ -38,4 +38,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9131/', timeout=5)"
 
 # Run the MCP server with HTTP transport
-CMD ["uv", "run", "--no-dev", "fastmcp", "run", "brainos_server.py:mcp", "--transport", "http", "--port", "9131"]
+CMD ["uv", "run", "--no-dev", "fastmcp", "run", "brainos_server.py:mcp", "--transport", "http", "--host", "0.0.0.0", "--port", "9131"]
