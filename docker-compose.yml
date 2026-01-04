@@ -5,8 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: brainos-server
-    ports:
-      - "${MCP_PORT:-9131}:9131"  # HTTP MCP endpoint
+    expose:
+      - "9131"  # HTTP MCP endpoint (internal only - Coolify proxy connects here)
     environment:
       # Neo4j connection (internal network)
       - NEO4J_URI=bolt://neo4j:7687
@@ -36,9 +36,9 @@ services:
   neo4j:
     image: neo4j:5.25-community
     container_name: brainos-neo4j
-    ports:
-      - "${NEO4J_HTTP_PORT:-7474}:7474"  # HTTP (Neo4j Browser) - optional for external access
-      - "${NEO4J_BOLT_PORT:-7687}:7687"  # Bolt - internal only typically
+    expose:
+      - "7474"  # HTTP (Neo4j Browser) - internal only
+      - "7687"  # Bolt - internal only
     environment:
       - NEO4J_AUTH=neo4j/brainos_password_123
       - NEO4J_dbms_memory_heap_initial__size=512m
