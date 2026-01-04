@@ -1,5 +1,6 @@
 services:
   # BrainOS MCP Server (HTTP transport for Claude Web)
+  # Connects to external Neo4j instance deployed separately in Coolify
   brainos:
     build:
       context: .
@@ -8,10 +9,10 @@ services:
     expose:
       - "9131"  # HTTP MCP endpoint (internal only - Coolify proxy connects here)
     environment:
-      # Neo4j connection (internal network)
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=brainos_password_123
+      # Neo4j connection (external instance - set in Coolify environment variables)
+      - NEO4J_URI=${NEO4J_URI:-bolt://localhost:7687}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
 
       # Groq API (Fast Actions)
       - GROQ_API_KEY=${GROQ_API_KEY}
@@ -26,38 +27,4 @@ services:
 
       - MCP_PORT=${MCP_PORT:-9131}
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - neo4j
-    networks:
-      - brainos-network
     restart: unless-stopped
-
-  # Neo4j Database
-  neo4j:
-    image: neo4j:5.25-community
-    container_name: brainos-neo4j
-    expose:
-      - "7474"  # HTTP (Neo4j Browser) - internal only
-      - "7687"  # Bolt - internal only
-    environment:
-      - NEO4J_AUTH=neo4j/brainos_password_123
-      - NEO4J_dbms_memory_heap_initial__size=512m
-      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_dbms_connector_bolt_advertised__address=:7687
-      - NEO4J_dbms_connector_http_advertised__address=:7474
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - neo4j_import:/var/lib/neo4j/import
-    networks:
-      - brainos-network
-    restart: unless-stopped
-
-networks:
-  brainos-network:
-    driver: bridge
-
-volumes:
-  neo4j_data:
-  neo4j_logs:
-  neo4j_import:
