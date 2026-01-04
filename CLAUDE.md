@@ -59,16 +59,17 @@ The project includes a `Dockerfile` and `docker-compose.yml` for containerized d
 **Local Docker:**
 ```bash
 docker compose up --build
-# MCP server: http://localhost:9131/mcp
-# Health check: http://localhost:9131/health
+# Note: Ports are exposed internally only (not published to host)
+# For local testing, temporarily change 'expose' to 'ports' in docker-compose.yml
 ```
 
-**Production Notes:**
-- Port: **9131** (changed from default 8000)
-- Transport: Streamable HTTP
+**Production Notes (Coolify/HTTPS):**
+- Port: **9131** (internal container port - Coolify proxy connects here)
+- Port exposure: Uses `expose` (internal only) - Coolify handles external HTTPS routing
+- Transport: Streamable HTTP with HTTPS termination at Coolify's reverse proxy
 - Authentication: None (run open - add proxy auth for production)
-- Health checks: Disabled (MCP returns 406 without SSE headers)
-- Neo4j: Community Edition 5.25, simplified config (no APOC)
+- Pattern: Matches chrome-mcp deployment pattern (proven to work with Coolify HTTPS)
+- Neo4j: Community Edition 5.25, internal network access only
 
 ### Claude Desktop Integration (Local Development)
 
@@ -380,17 +381,27 @@ Failed to read config: Unrecognized setting with name: URI
 - **Solution**: Health checks disabled in current config; monitor manually or use `/health` endpoint
 
 **Problem: HTTPS domain returns "no available server"**
-- **Cause**: Proxies (Cloudflare, Nginx) may strip SSE headers required for MCP protocol
-- **Solution**: Use HTTP with port, or configure proxy to pass `text/event-stream` headers
+- **Cause**: Using `ports` instead of `expose` in docker-compose.yml conflicts with Coolify's reverse proxy routing
+- **Solution**: ✅ FIXED - Now uses `expose` directive (internal only) to match chrome-mcp pattern
+- **Technical Details**: Coolify's HTTPS proxy needs to connect to container ports internally. Publishing ports to the host with `ports:` causes routing conflicts. Using `expose:` keeps ports internal while allowing Coolify's proxy to connect properly.
 
 ### Local Testing
 
-Always test locally before deploying:
+**Note**: Since ports are now `expose`d (internal only), for local testing you need to either:
+
+1. **Temporarily publish ports** - Change `expose:` to `ports:` in docker-compose.yml:
+```yaml
+ports:
+  - "9131:9131"  # Temporary for local testing
+```
+
+2. **Test from within Docker network**:
 ```bash
 docker compose up --build
-curl http://localhost:9131/health      # Should return {"status":"healthy"}
-curl http://localhost:9131/mcp         # Should return 406 (expected without SSE headers)
+docker exec brainos-server curl http://localhost:9131/health  # Should return {"status":"healthy"}
 ```
+
+**For Coolify deployment**, keep `expose:` as-is - the proxy will connect internally.
 
 ### Common Issues
 
@@ -399,6 +410,7 @@ curl http://localhost:9131/mcp         # Should return 406 (expected without SSE
 | `Module not found` | Run `uv sync` to install dependencies |
 | Neo4j connection refused | Ensure `docker compose up -d` is running first |
 | MCP tools not visible | Check FastMCP server logs for errors |
-| Port 8000 already in use | Changed to port 9131 - update local configs if needed |
-| HTTPS returns "no available server" | Fixed - server now runs via `mcp.run()` for proxy compatibility |
+| Port 8000 already in use | ✅ Changed to port 9131 - update local configs if needed |
+| HTTPS returns "no available server" | ✅ FIXED - Now uses `expose` instead of `ports` (chrome-mcp pattern) |
 | Coolify deployment fails | Ensure environment variables are set in Coolify, not in `.env` file |
+| Can't access localhost:9131 locally | Ports are internal only - see Local Testing section for options |
