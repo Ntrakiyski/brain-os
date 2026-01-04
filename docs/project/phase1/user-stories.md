@@ -33,14 +33,17 @@ Build a functional MCP server that provides a persistent connection between Clau
 
 ### Stream C: Docker & Neo4j Setup (The Infrastructure Layer)
 **User Story:**
-> As a developer, I want to run Neo4j locally using Docker Compose, so that I have a self-contained development environment that matches production.
+> As a developer, I want to run Neo4j as a separate service, so that I have clean separation between application and database infrastructure.
 
 **Acceptance Criteria:**
-*   ✅ A `docker-compose.yml` file is configured to run Neo4j Community Edition.
-*   ✅ Neo4j data persists across container restarts using Docker volumes.
-*   ✅ Neo4j Browser is accessible at `http://localhost:7474` for manual queries.
-*   ✅ The Bolt protocol is available at `bolt://localhost:7687` for application connections.
-*   ✅ Health check configured for container monitoring.
+*   ✅ Neo4j can be deployed separately from BrainOS application
+*   ✅ BrainOS connects to Neo4j via configurable `NEO4J_URI` environment variable
+*   ✅ Neo4j data persists across container restarts using Docker volumes
+*   ✅ Neo4j Browser is accessible at `http://localhost:7474` for manual queries (local dev)
+*   ✅ The Bolt protocol is available for application connections
+*   ✅ Production deployment separates Neo4j service from BrainOS to avoid env var conflicts
+
+**Update Note:** Originally implemented with Neo4j in same docker-compose as BrainOS. Revised to external deployment after encountering Coolify environment variable sharing issues.
 
 ### Stream D: Claude Desktop Integration (The User Interface Layer) ✨ NEW
 **User Story:**
