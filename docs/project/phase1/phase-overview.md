@@ -141,53 +141,56 @@ Threads:  [Thread 1: LLM]   [Thread 2: DB]    [Thread 3: DB]
 
 ---
 
-### 4. Why Docker Compose for Neo4j?
+### 4. Why External Neo4j Deployment?
 
-**Decision:** Run Neo4j via Docker Compose with persistent volumes.
+**Decision:** Deploy Neo4j as a separate service, external to BrainOS container.
 
 **Alternatives Considered:**
+- Neo4j in same docker-compose with BrainOS (original Phase 1 approach)
 - Native installation (brew/apt/chocolate)
 - Neo4j Desktop (GUI application)
 - Cloud-hosted Neo4j Aura (free tier limited)
 
 **Rationale:**
 
-**1. Environment Parity**
-```bash
-# Same commands work everywhere
-docker-compose up -d    # Local dev
-docker-compose -f docker-compose.prod.yml up -d  # Production
-```
-
-**2. Dependency Isolation**
-- No Neo4j installation on host machine
-- No version conflicts with other projects
-- Clean teardown: `docker-compose down -v`
-
-**3. Configuration as Code**
+**1. Environment Variable Isolation**
 ```yaml
-# docker-compose.yml is version-controlled
-services:
-  neo4j:
-    image: neo4j:5.25-community  # Pinned version
-    environment:
-      - NEO4J_AUTH=neo4j/brainos_password_123
-    volumes:
-      - neo4j_data:/data  # Persistent storage
+# Problem with multi-service docker-compose:
+# Coolify applies ALL env vars to ALL containers
+# NEO4J_URI, GROQ_API_KEY → Neo4j sees as invalid config → restart loop
+
+# Solution: Separate deployments
+# BrainOS: Only receives BrainOS env vars
+# Neo4j: Only receives Neo4j-specific env vars
 ```
 
-**4. Team Onboarding**
-- New developers run two commands: `git clone` + `docker-compose up -d`
-- No manual Neo4j installation guide needed
+**2. Independent Scaling**
+- Neo4j can be upgraded without touching BrainOS
+- Different resource limits per service
+- BrainOS restarts don't affect database
+
+**3. Production Best Practice**
+```bash
+# Separate services in Coolify/production
+Neo4j Service:    bolt://neo4j-service:7687
+BrainOS Service:  Connects via NEO4J_URI env var
+```
+
+**4. Clean Architecture**
+- Database is infrastructure (deploy once)
+- Application is logic (deploy often)
+- Schema lives in BrainOS code, not Neo4j deployment
 
 **Trade-offs:**
-- **Pro:** Reproducible across machines (Mac/Linux/Windows)
-- **Pro:** Easy version upgrades (change image tag)
-- **Pro:** Data persistence across container restarts
-- **Con:** Requires Docker installed (~500MB download)
-- **Con:** Slight performance overhead (~5% vs native)
+- **Pro:** No environment variable pollution/conflicts
+- **Pro:** Matches production patterns (app vs database)
+- **Pro:** Independent lifecycle management
+- **Con:** Requires two deployment steps instead of one
+- **Con:** Need to configure connection URI
 
-**Outcome:** Docker's developer experience benefits outweigh minimal performance cost.
+**Outcome:** External Neo4j prevents Coolify env var conflicts and follows production patterns.
+
+**Update Note:** This decision was revised after Phase 1 completion when deploying to Coolify revealed environment variable sharing issues.
 
 ---
 
@@ -522,20 +525,32 @@ The following are already in place:
 ## Quick Reference: Phase 1 Commands
 
 ```bash
-# Start Neo4j
-docker-compose up -d
+# Start Neo4j (local development only - separate deployment for production)
+# For local dev: Run Neo4j separately
+docker run -d -p 7687:7687 -p 7474:7474 \
+  -e NEO4J_AUTH=neo4j/brainos_password_123 \
+  -v neo4j_data:/data \
+  neo4j:5.25-community
+
+# Build and run BrainOS
+docker compose up --build
 
 # Run MCP server (STDIO)
 fastmcp run brainos_server.py:mcp
 
 # Run with HTTP transport (for testing)
-fastmcp run brainos_server.py:mcp --transport http --port 8000
+python brainos_server.py
 
 # Install in Claude Desktop
 fastmcp install claude-desktop brainos_server.py --project . --env-file .env
 
-# Check Neo4j Browser
+# Check Neo4j Browser (if running locally)
 open http://localhost:7474  # neo4j / brainos_password_123
+
+# For Coolify deployment:
+# 1. Deploy Neo4j separately (see CLAUDE.md "Neo4j Deployment Guide")
+# 2. Set NEO4J_URI in BrainOS environment to point to Neo4j service
+# 3. Deploy BrainOS with external Neo4j connection
 ```
 
 ---
