@@ -320,7 +320,7 @@ class PostQuerySynthesizeNode(AsyncNode):
             for r in relations[:10]
         ]) if relations else "No relations found"
 
-        client = await get_openrouter_client()
+        client = get_openrouter_client()
         model = get_openrouter_model("researching")
 
         prompt = f"""Context: User is interested in "{context.get('intent', 'search')}"

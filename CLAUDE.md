@@ -280,21 +280,28 @@ Phase 2 established the scalable foundation for 20+ agents and 70+ tools:
 ### Phase 3: ✅ COMPLETED
 Phase 3 transforms Brain OS into a cognitive operating system with instinctive memory and contextual retrieval:
 - ✅ **Implementation Complete**: All Phase 3 features fully implemented and tested
-- ✅ **Testing**: 9/9 tools passed (100% success rate) - see `test_all_tools.py`
+- ✅ **Testing**: 11/11 tools passed (100% success rate) - see `test_all_tools.py`
 - ✅ **Key Features Implemented**:
   - **Instinctive Memory System**: Auto-activation without conscious search (the "Oven Analogy")
   - **Contextual Retrieval**: 3-agent system (pre-query → Neo4j → post-query synthesis)
   - **Entity-Observation Model**: Enhanced bubble schema with entities and observations
   - **Relationship Visualization**: Mermaid diagrams + Neo4j Browser queries
+  - **Server-Level Instructions**: 90+ lines of comprehensive guidance for Claude
+  - **Resources System**: 4 static documentation resources for LLM consumption
+  - **Prompt Templates**: 4 reusable workflow prompts (weekly_review, project_start, decision_support, cognitive_balance)
+  - **Deletion Tools**: Safe memory deletion with confirmation requirements
 - ✅ **Architecture Migration**: Replaced BaseAgent with PocketFlow AsyncNode/AsyncFlow
 - ✅ **New Tools**:
   - `get_instinctive_memory`: Automatic memory activation based on context
   - `get_memory_relations`: Deep retrieval with contextual understanding
   - `visualize_relations`: Interactive relationship visualization
-- ✅ **Enhanced Tools**: `create_memory` now supports memory_type, activation_threshold, entities, observations
+  - `delete_memory`: Delete specific memory with safety confirmation
+  - `delete_all_memories`: Mass deletion with "DELETE_ALL" confirmation
+- ✅ **Enhanced Tools**: All tools now have comprehensive Field descriptions and docstrings
+- ✅ **Bug Fixes**: Fixed `async for` iteration in contextual_retrieval.py
 
 **Documentation:**
-- See `docs/TOOLS_REFERENCE.md` for complete tool documentation
+- See `docs/COMPLETE_USER_GUIDE.md` for comprehensive user guide
 - See `docs/project/phase3/` for design specifications
 - See `test_all_tools.py` for comprehensive test suite
 
@@ -337,6 +344,140 @@ async def create_memory(
 - Return user-friendly formatted strings, not raw data
 
 **Version Pinning**: Use `fastmcp>=2.14.2` to allow patch updates while avoiding breaking changes.
+
+## FastMCP Meta-Communication Features
+
+Beyond tools, FastMCP provides powerful features for giving instructions and best practices to LLM interfaces.
+
+### Server-Level Instructions (`FastMCP(instructions=...)`)
+
+The MCP server includes 90+ lines of comprehensive guidance that Claude sees when connecting:
+
+```python
+mcp = FastMCP(
+    "Brain OS",
+    instructions="""
+    You are interacting with Brain OS, a cognitive operating system...
+
+    ## THE OVEN ANALOGY
+    Instinctive memory auto-activates like a hot oven reminds you of food...
+
+    ## TOOL SELECTION GUIDE
+    - get_memory: Quick keyword search
+    - get_instinctive_memory: Context switching
+    - get_memory_relations: Deep contextual queries
+
+    ## BEST PRACTICES
+    - Include WHY in content, not just WHAT
+    - Use consistent entity names
+    - Set appropriate salience
+    """
+)
+```
+
+**What this provides:**
+- Global guidance for all tool interactions
+- Tool selection recommendations
+- Best practices for memory creation
+- Cognitive balance indicators
+- Common workflow patterns
+
+### Resources (`@mcp.resource`)
+
+Static documentation that LLMs can read via `brainos://` URIs:
+
+| Resource | Purpose | Usage |
+|----------|---------|-------|
+| `brainos://guide` | Complete user guide | "Read the brainos://guide resource" |
+| `brainos://philosophy` | Core philosophy concepts | "Read brainos://philosophy" |
+| `brainos://tool-reference` | Quick tool reference | "Read brainos://tool-reference" |
+| `brainos://prompts` | Prompt templates guide | "Read brainos://prompts" |
+
+**How to use:**
+```python
+@mcp.resource("brainos://guide")
+async def user_guide_resource() -> str:
+    """Complete user guide for Brain OS best practices."""
+    guide_path = project_root / "docs" / "COMPLETE_USER_GUIDE.md"
+    return guide_path.read_text() if guide_path.exists() else "Not found"
+```
+
+### Prompts (`@mcp.prompt`)
+
+Reusable prompt templates for common workflows:
+
+| Prompt | Purpose | Usage |
+|--------|---------|-------|
+| `weekly_review` | End-of-week cognitive review | "Use the weekly_review prompt" |
+| `project_start` | Load context when starting work | "Use project_start for Project A" |
+| `decision_support` | Decision-making with past experience | "Use decision_support prompt" |
+| `cognitive_balance` | Check and rebalance cognitive state | "Use cognitive_balance prompt" |
+
+**How to use:**
+```python
+@mcp.prompt("weekly_review")
+async def weekly_review_prompt() -> str:
+    """Generate a structured weekly review of all memories."""
+    return """
+    Please help me with a weekly review...
+    1. Run get_all_memories(limit=100)
+    2. Run list_sectors()
+    3. Create Reflective summary
+    """
+```
+
+**Note:** Prompts may not be visible in all MCP clients. Reference them by name in conversation.
+
+### Enhanced Tool Descriptions
+
+All tools now have comprehensive Field descriptions and docstrings:
+
+```python
+@mcp.tool
+async def create_memory(
+    content: str = Field(
+        description="What to remember. Include WHY, not just WHAT"
+    ),
+    sector: str = Field(
+        description="Cognitive sector. REQUIRED - Choose from: Episodic, Semantic, Procedural, Emotional, Reflective"
+    ),
+    salience: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Importance: 0.9-1.0 (business-critical), 0.7-0.8 (important), 0.5-0.6 (routine)"
+    ),
+) -> str:
+    """
+    Store a new memory in the Synaptic Graph.
+
+    **Use this for ANY information worth remembering.**
+
+    Best Practices:
+    - Include decision rationale in observations
+    - Use consistent entity names
+    - Set appropriate salience
+
+    Common Patterns:
+    **Decision**: Semantic + instinctive + high salience
+    **Meeting**: Episodic + thinking + medium salience
+    """
+```
+
+### Deletion Tools with Safety
+
+Two deletion tools with confirmation requirements:
+
+**`delete_memory`**: Delete specific memory
+- Requires `confirm=True` to prevent accidental deletion
+- Shows what will be deleted before deleting
+- Uses soft deletion (sets `valid_to` timestamp)
+
+**`delete_all_memories`**: Delete ALL memories
+- Requires `confirm="DELETE_ALL"` (exact string match)
+- Shows count before deletion
+- Warns about data loss
+- Suggests alternatives
 
 ## PocketFlow Pattern (Phase 3)
 
