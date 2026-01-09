@@ -59,16 +59,40 @@ The project includes a `Dockerfile` and `docker-compose.yml` for containerized d
 **Local Docker:**
 ```bash
 docker compose up --build
-# MCP server: http://localhost:9131/mcp
-# Health check: http://localhost:9131/health
+# Note: Ports are exposed internally only (not published to host)
+# For local testing, temporarily change 'expose' to 'ports' in docker-compose.yml
 ```
 
-**Production Notes:**
-- Port: **9131** (changed from default 8000)
-- Transport: Streamable HTTP
+**Production Notes (Coolify/HTTPS):**
+- Port: **9131** (internal container port - Coolify proxy connects here)
+- Port exposure: Uses `expose` (internal only) - Coolify handles external HTTPS routing
+- Transport: Streamable HTTP with HTTPS termination at Coolify's reverse proxy
 - Authentication: None (run open - add proxy auth for production)
-- Health checks: Disabled (MCP returns 406 without SSE headers)
-- Neo4j: Community Edition 5.25, simplified config (no APOC)
+- Pattern: Matches chrome-mcp deployment pattern (proven to work with Coolify HTTPS)
+- **Neo4j: Deployed separately** - See "Neo4j Deployment Guide" below
+
+### Neo4j Deployment Guide
+
+**BrainOS now connects to an external Neo4j instance** to avoid Coolify environment variable conflicts.
+
+**Deployment Options:**
+
+1. **Coolify Deployment (Recommended):**
+   - Deploy Neo4j as a separate service in Coolify
+   - Use internal service URL: `bolt://neo4j-service-name:7687`
+   - Set `NEO4J_URI` in BrainOS environment to point to this service
+   - See separate Neo4j deployment repo for full setup
+
+2. **Cloud Neo4j (Neo4j Aura):**
+   - Free tier available at https://neo4j.com/cloud/aura/
+   - Get connection URI like `neo4j+s://xxxxx.databases.neo4j.io`
+   - Set `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` in BrainOS
+
+3. **Local Development:**
+   - Run Neo4j locally: `docker run -p 7687:7687 -p 7474:7474 neo4j:5.25-community`
+   - Use `NEO4J_URI=bolt://localhost:7687`
+
+**Important:** All your schema, queries, and data structure are defined in BrainOS code (`src/database/`), not in Neo4j deployment.
 
 ### Claude Desktop Integration (Local Development)
 
@@ -128,10 +152,12 @@ If you prefer manual configuration, edit your Claude Desktop config file:
 
 ### Environment Variables Required
 ```env
-# Neo4j (local Docker instance)
-NEO4J_URI=bolt://localhost:7687
+# Neo4j (external instance - deploy separately in Coolify)
+# For Coolify: Use internal service URL like bolt://neo4j-service:7687
+# For local dev: Use bolt://localhost:7687
+NEO4J_URI=bolt://your-neo4j-host:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=brainos_password_123
+NEO4J_PASSWORD=your-secure-password
 
 # Groq (fast actions)
 GROQ_API_KEY=<your-groq-key>
@@ -148,7 +174,10 @@ OPENROUTER_PLANNING_MODEL=anthropic/claude-opus-4
 MCP_PORT=9131
 ```
 
-**Note:** Do NOT commit `.env` or `.env.example` files if deploying to Coolify - it reads env files and applies them to all containers, causing Neo4j config errors.
+**Important Notes:**
+- **Neo4j is now deployed separately** - See "Neo4j Deployment" section below
+- Do NOT commit `.env` or `.env.example` files
+- In Coolify, set all environment variables in the UI, not in files
 
 ## Architecture Overview
 
@@ -542,33 +571,49 @@ memory_workflow = create >> (update - "needs_synthesis" >> synthesize)
 ```
 Failed to read config: Unrecognized setting with name: URI
 ```
-- **Cause**: Coolify reads `.env` or `.env.example` files and applies variables to ALL containers
-- **Solution**: Don't commit env files; set variables directly in Coolify's environment section
+- **Cause**: Coolify applies ALL environment variables to ALL containers in a docker-compose file
+- **Solution**: ✅ FIXED - Neo4j is now deployed separately, not in the same docker-compose
+- **Action Required**: Deploy Neo4j as a separate Coolify service and set `NEO4J_URI` to point to it
 
-**Problem: Health check restart loops**
-- **Cause**: MCP endpoint returns 406 without proper SSE headers
-- **Solution**: Health checks disabled in current config; monitor manually or use `/health` endpoint
+**Problem: Neo4j connection refused / DNS resolution failed**
+```
+Failed to DNS resolve address neo4j:7687
+```
+- **Cause**: Neo4j is not running or not accessible
+- **Solution**: Deploy Neo4j separately and configure `NEO4J_URI` correctly in BrainOS environment variables
 
 **Problem: HTTPS domain returns "no available server"**
-- **Cause**: Proxies (Cloudflare, Nginx) may strip SSE headers required for MCP protocol
-- **Solution**: Use HTTP with port, or configure proxy to pass `text/event-stream` headers
+- **Cause**: Using `ports` instead of `expose` in docker-compose.yml conflicts with Coolify's reverse proxy routing
+- **Solution**: ✅ FIXED - Now uses `expose` directive (internal only) to match chrome-mcp pattern
+- **Technical Details**: Coolify's HTTPS proxy needs to connect to container ports internally. Publishing ports to the host with `ports:` causes routing conflicts. Using `expose:` keeps ports internal while allowing Coolify's proxy to connect properly.
 
 ### Local Testing
 
-Always test locally before deploying:
+**Note**: Since ports are now `expose`d (internal only), for local testing you need to either:
+
+1. **Temporarily publish ports** - Change `expose:` to `ports:` in docker-compose.yml:
+```yaml
+ports:
+  - "9131:9131"  # Temporary for local testing
+```
+
+2. **Test from within Docker network**:
 ```bash
 docker compose up --build
-curl http://localhost:9131/health      # Should return {"status":"healthy"}
-curl http://localhost:9131/mcp         # Should return 406 (expected without SSE headers)
+docker exec brainos-server curl http://localhost:9131/health  # Should return {"status":"healthy"}
 ```
+
+**For Coolify deployment**, keep `expose:` as-is - the proxy will connect internally.
 
 ### Common Issues
 
 | Issue | Solution |
 |-------|----------|
 | `Module not found` | Run `uv sync` to install dependencies |
-| Neo4j connection refused | Ensure `docker compose up -d` is running first |
+| Neo4j connection refused | ✅ Deploy Neo4j separately - see "Neo4j Deployment Guide" section |
+| Neo4j "Unrecognized setting" errors | ✅ FIXED - Neo4j now deployed separately, not in docker-compose |
 | MCP tools not visible | Check FastMCP server logs for errors |
-| Port 8000 already in use | Changed to port 9131 - update local configs if needed |
-| HTTPS returns "no available server" | Fixed - server now runs via `mcp.run()` for proxy compatibility |
+| Port 8000 already in use | ✅ Changed to port 9131 - update local configs if needed |
+| HTTPS returns "no available server" | ✅ FIXED - Now uses `expose` instead of `ports` (chrome-mcp pattern) |
 | Coolify deployment fails | Ensure environment variables are set in Coolify, not in `.env` file |
+| Can't access localhost:9131 locally | Ports are internal only - see Local Testing section for options |
