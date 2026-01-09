@@ -20,41 +20,58 @@ def register_get_memory_relations(mcp) -> None:
     @mcp.tool
     async def get_memory_relations(
         query: str = Field(
-            description="What you're looking for (e.g., 'Project A technology decisions')"
+            description="What you're looking for. Be specific and conversational (e.g., 'Why did I choose PostgreSQL?', 'How do I deploy this project?', 'What are the key decisions for FastTrack?')"
         ),
         conversation_history: List[str] = Field(
             default=[],
-            description="Recent messages for context (last 5-10 recommended)"
+            description="CRITICAL for context: Recent messages (last 5-10). Example: ['Building real-time notification system', 'Expected load: 1M messages/day', 'Budget constrained']"
         ),
         time_scope: str = Field(
             default="auto",
-            description="Time filter: 'recent' (30 days), 'all_time', or 'auto' (let AI decide)"
+            description="Time filter: 'recent' (last 30 days), 'all_time' (everything), or 'auto' (let AI decide based on query)"
         ),
         salience_filter: str = Field(
             default="auto",
-            description="Salience filter: 'high' (>0.6), 'any', or 'auto' (let AI decide)"
+            description="Salience filter: 'high' (>0.6, important memories), 'any' (everything), or 'auto' (let AI decide based on query)"
         ),
     ) -> str:
         """
-        Deep memory retrieval with contextual understanding.
+        Deep contextual retrieval with 3-agent synthesis system.
 
-        This is different from get_memory:
-        - **Pre-query**: Analyzes context and expands/narrows search intelligently
-        - **Query**: Neo4j with smart filters based on conversation context
-        - **Post-query**: Synthesizes results and finds relationships
+        **This is different from get_memory**: Instead of simple keyword search,
+        this tool uses a 3-agent system for comprehensive understanding.
 
-        Use this when you need comprehensive, context-aware retrieval.
-        Use get_memory for simple, direct searches.
+        The 3-Agent System:
+        1. **Pre-Query Agent** (~100ms): Analyzes query + conversation history,
+           extracts related concepts, determines optimal filters
+        2. **Query Agent**: Searches Neo4j with expanded context, retrieves
+           memories and their connections
+        3. **Post-Query Agent** (~2-5s): Groups by theme, identifies insights,
+           extracts relationships, generates synthesis
 
-        **Example contexts where this shines**:
-        - "Why did I choose X over Y?" (finds decision + rationale)
-        - "How do I deploy this?" (finds all deployment-related memories)
-        - "What are the key decisions?" (finds high-salience memories)
+        When to Use This:
+        ✓ "Why did I choose X over Y?" (Decision rationale)
+        ✓ "How do I deploy this?" (All related memories)
+        ✓ "What are the key decisions?" (High-level overview)
+        ✓ Complex queries requiring synthesis
+        ✓ Questions with context ("Given I'm building X, should I use Y?")
 
-        **How it works**:
-        1. Pre-query agent analyzes your query and conversation history (~100ms)
-        2. Query agent searches Neo4j with expanded context
-        3. Post-query agent synthesizes results and identifies relationships (~2-5s)
+        When NOT to Use This:
+        ✗ Simple keyword search (use get_memory)
+        ✗ Quick lookup (faster tools available)
+        ✗ Just need recent memories (use time filters elsewhere)
+
+        Best Practices:
+        1. ALWAYS provide conversation_history if available
+        2. Be conversational in your query
+        3. Review the synthesis (themes, insights, relationships)
+        4. Use for understanding patterns, not fact-checking
+
+        Output Sections:
+        - Themes: What clusters emerged
+        - Key Insights: Relevance explained
+        - Relationships: How memories connect
+        - All Memories: Reference list
         """
         try:
             # Run the contextual retrieval flow

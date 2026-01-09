@@ -20,22 +20,55 @@ def register_summarize_project(mcp) -> None:
     @mcp.tool
     async def summarize_project(
         project: str = Field(
-            description="The project name to search for and summarize (e.g., 'Brain OS', 'website redesign')"
+            description="Project name to search for and summarize. Must match entity names used in memories (e.g., 'FastTrack', 'BrainOS', 'website redesign')"
         ),
-        limit: int = Field(default=20, description="Maximum number of memories to include", ge=1, le=100),
+        limit: int = Field(
+            default=20,
+            ge=1,
+            le=100,
+            description="Maximum memories to include (1-100). Use 10-20 for small projects, 30-50 for large projects"
+        ),
     ) -> str:
         """
-        Summarize all memories related to a specific project.
+        AI-powered project summaries using retrieved memories.
 
-        This tool retrieves memories containing the project name,
-        then uses AI to generate a structured summary including:
-        - Overview
-        - Key Decisions
-        - Action Items
-        - Notes
+        **Use this when returning to a project after a break.**
 
-        Powered by PocketFlow with AsyncNode/AsyncFlow patterns.
-        Configuration can be modified in src/flows/summarize_project.py.
+        This tool:
+        1. Searches for memories containing the project name
+        2. Formats memories for PocketFlow processing
+        3. Runs PocketFlow with OpenRouter CREATIVE model
+        4. Generates structured summary with sections
+
+        Output Sections:
+        - Overview: Project description and context
+        - Key Decisions: Major choices with rationale
+        - Action Items: Outstanding tasks and next steps
+        - Notes: Client info, budget, timeline
+
+        When to Use This:
+        ✓ Starting work on a project after a break
+        ✓ Onboarding to an existing project
+        ✓ Preparing status reports
+        ✓ Understanding project patterns
+
+        When NOT to Use This:
+        ✗ Quick memory lookup (use get_memory)
+        ✗ Decision rationale (use get_memory_relations)
+        ✗ Context switching (use get_instinctive_memory)
+
+        Best Practices:
+        1. Use consistent project names across memories
+        2. Include project name in entities when creating memories
+        3. Adjust limit based on project size
+        4. Review generated summary for accuracy
+
+        Speed: ~3-10 seconds (uses OpenRouter CREATIVE model)
+
+        Example:
+        - create_memory(entities=["FastTrack", "pricing"], ...)
+        - create_memory(entities=["FastTrack", "N8N"], ...)
+        - summarize_project(project="FastTrack", limit=10)
         """
         try:
             # Step 1: Retrieve memories related to the project

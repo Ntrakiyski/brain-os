@@ -16,14 +16,38 @@ def register_get_memory(mcp) -> None:
 
     @mcp.tool
     async def get_memory(
-        query: str = Field(description="The search term to find matching memories"),
-        limit: int = Field(default=10, description="Maximum number of results to return"),
+        query: str = Field(
+            description="Search term for finding memories (e.g., 'PostgreSQL', 'deployment', 'FastTrack pricing'). Case-insensitive keyword search."
+        ),
+        limit: int = Field(
+            default=10,
+            ge=1,
+            le=200,
+            description="Maximum results (1-200). Use 5-10 for specific lookups, 20-50 for broader searches"
+        ),
     ) -> str:
         """
-        Retrieve memories from the Synaptic Graph based on a keyword search.
+        Quick keyword search for memories.
 
-        Returns bubbles matching the query, ordered by recency.
-        Use this to recall previously stored context.
+        **Use this when you know what you're looking for.**
+
+        Simple, fast keyword search that returns memories containing your
+        search term. Case-insensitive, searches content and entities.
+
+        When to Use This:
+        ✓ Quick fact-checking ("What was the pricing?")
+        ✓ Finding specific memories ("When did I meet with X?")
+        ✓ Retrieving known information ("Deployment procedure")
+
+        When NOT to Use This:
+        ✗ Complex queries requiring synthesis (use get_memory_relations)
+        ✗ Starting work on a project (use get_instinctive_memory)
+        ✗ Need overview of everything (use get_all_memories)
+
+        Output:
+        - Returns memories matching your query
+        - Ordered by recency (newest first)
+        - Shows sector, salience, created date, source
         """
         try:
             results = await search_bubbles(query, limit)
@@ -49,14 +73,40 @@ def register_get_memory(mcp) -> None:
     @mcp.tool
     async def get_all_memories(
         limit: int = Field(
-            default=50, description="Maximum number of memories to return", ge=1, le=200
+            default=50,
+            ge=1,
+            le=200,
+            description="Maximum memories to return (1-200). Use 20-50 for recent overview, 100+ for comprehensive review"
         ),
     ) -> str:
         """
-        Retrieve all memories from the Synaptic Graph.
+        Complete overview with statistics and sector distribution.
 
-        Returns all active bubbles ordered by recency (most recent first).
-        Use this to get a complete overview of stored memories.
+        **Use this for starting work, weekly reviews, or feeling overwhelmed.**
+
+        This tool provides:
+        - Total memory count
+        - Sector distribution with percentages
+        - Visual ASCII bar chart
+        - Recent memories list
+
+        When to Use This:
+        ✓ Starting work on a project (get context)
+        ✓ Weekly reviews (see patterns)
+        ✓ Feeling overwhelmed (ground yourself)
+        ✓ Before planning sessions (inform decisions)
+
+        When NOT to Use This:
+        ✗ Looking for something specific (use get_memory)
+        ✗ Need sector breakdown only (use list_sectors)
+        ✗ Quick fact check (use get_memory)
+
+        Cognitive Balance:
+        After running this, check if your sector distribution is balanced:
+        - Procedural: 20-30%, Semantic: 25-35%, Episodic: 15-25%
+        - Emotional: 5-15%, Reflective: 5-15%
+
+        If imbalanced, consider creating memories in underrepresented sectors.
         """
         try:
             results = await get_all_bubbles(limit)

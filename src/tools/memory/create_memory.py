@@ -17,38 +17,67 @@ def register_create_memory(mcp) -> None:
 
     @mcp.tool
     async def create_memory(
-        content: str = Field(description="The information to remember"),
+        content: str = Field(
+            description="What to remember. Include WHY, not just WHAT (e.g., 'Chose PostgreSQL over MongoDB for ACID compliance' not just 'Use PostgreSQL')"
+        ),
         sector: str = Field(
-            description="Cognitive sector: Episodic, Semantic, Procedural, Emotional, or Reflective"
+            description="Cognitive sector. REQUIRED - Choose from: Episodic (events/meetings), Semantic (facts/decisions), Procedural (how-to/workflows), Emotional (feelings/reactions), Reflective (insights/learnings)"
         ),
         source: str = Field(
             default="direct_chat",
-            description="Origin of the data (e.g., transcript, direct_chat)",
+            description="Origin of data. Examples: meeting, transcript, technical_decision, direct_chat, email, documentation",
         ),
-        salience: float = Field(default=0.5, description="Importance score from 0.0 to 1.0"),
+        salience: float = Field(
+            default=0.5,
+            ge=0.0,
+            le=1.0,
+            description="Importance score (0.0-1.0). Use the full range: 0.9-1.0 (business-critical), 0.7-0.8 (important), 0.5-0.6 (routine), 0.3-0.4 (nice-to-know), 0.0-0.2 (temporary)"
+        ),
         # Phase 3 parameters
         memory_type: str = Field(
             default="thinking",
-            description="Memory type: instinctive (auto-activates), thinking (explicit recall), or dormant (low priority)",
+            description="Memory activation pattern: 'instinctive' (auto-activates like a hot oven - use sparingly for decisions/pricing/procedures), 'thinking' (explicit recall - default), 'dormant' (archives)"
         ),
         activation_threshold: float = Field(
             default=None,
-            description="Salience level that triggers automatic activation (0.0-1.0). Auto-calculated if not specified.",
+            description="Auto-calculated if omitted. Override only if you need custom auto-activation sensitivity: 0.25 (easy activation), 0.65 (moderate), 0.90 (rare)"
         ),
         entities: list[str] = Field(
             default=[],
-            description="Key entities mentioned (e.g., people, projects, technologies)",
+            description="Key entities for retrieval: people, projects, technologies. Keep names consistent across memories (e.g., always 'FastTrack' not 'fast track')"
         ),
         observations: list[str] = Field(
             default=[],
-            description="Additional observations or context notes",
+            description="Additional context that supports but isn't the main point: rationale, trade-offs, deadlines, criteria, what was considered"
         ),
     ) -> str:
         """
         Store a new memory in the Synaptic Graph.
 
-        Creates a Bubble node with automatic timestamp tracking.
-        Use this to preserve important context across sessions.
+        **Use this for ANY information worth remembering.**
+
+        Best Practices:
+        - Include decision rationale in observations, not just content
+        - Use consistent entity names across memories (e.g., always "FastTrack" not "fast track")
+        - Set appropriate salience - don't default everything to 0.5
+        - Only mark truly auto-relevant memories as instinctive
+
+        Common Patterns:
+
+        **Decision** (Semantic + instinctive + high salience):
+        - content: "Chose PostgreSQL over MongoDB for ACID compliance"
+        - observations: ["Financial data requires transactions", "Regulatory compliance needed"]
+        - salience: 0.8
+
+        **Meeting** (Episodic + thinking + medium salience):
+        - content: "FastTrack client meeting: Discussed N8N workflow scope"
+        - observations: ["Budget: 20 hours approved", "Start: Monday Jan 12", "Rate: €60/hour"]
+        - salience: 0.6
+
+        **Procedure** (Procedural + instinctive + high salience):
+        - content: "Deployment: Use docker compose up -d for production"
+        - observations: ["Must pull latest images first", "Check logs with docker logs"]
+        - salience: 0.7
         """
         try:
             # Validate and create the bubble

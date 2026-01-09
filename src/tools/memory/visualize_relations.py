@@ -18,48 +18,83 @@ def register_visualize_relations(mcp) -> None:
     @mcp.tool
     async def visualize_relations(
         bubble_id: str = Field(
-            description="Bubble ID (element_id) to visualize relationships for"
+            description="Bubble ID to visualize. Accepts formats: '4' (numeric), '4:abc123...' (full element_id), or from get_all_memories output. Tool auto-extracts numeric ID."
         ),
         depth: int = Field(
             default=2,
-            description="How many hops to explore (1-4 recommended)",
+            description="How many hops to explore (1-4). Use 1 for direct connections, 2-3 for broader context, 4 for comprehensive exploration",
             ge=1,
             le=4
         ),
         format: str = Field(
             default="mermaid",
-            description="Output format: 'mermaid' for diagram, 'neo4j' for browser query"
+            description="Output format. Use 'mermaid' for inline diagrams, 'neo4j' for interactive graph exploration at http://localhost:7474"
         ),
     ) -> str:
         """
-        Visualize relationships between bubbles.
+        Visualize connections between memories.
 
-        Returns either:
-        - Mermaid diagram code for inline visualization
-        - Neo4j Browser query for interactive exploration
+        **Use this to understand knowledge clusters and explore relationships.**
 
-        Relationships show how memories connect:
+        Finding Bubble IDs:
+        - Run get_all_memories() and look for "ID: 4:abc123..."
+        - Use just the number: "4"
+        - From get_memory() results
+
+        Relationship Types:
         - **explains**: Rationale or justification
         - **benefits**: Positive outcome or advantage
         - **contradicts**: Conflict or disagreement
         - **relates_to**: General association
 
-        **Example**:
-            Input: bubble_id="4", depth=2
-            Output: Mermaid diagram showing connections up to 2 hops away
+        When to Use This:
+        ✓ Understanding how memories connect
+        ✓ Exploring related concepts
+        ✓ Finding unexpected connections
+        ✓ Interactive graph analysis (use format="neo4j")
 
-        **Neo4j Browser**:
-        For interactive exploration, copy the provided Cypher query into:
-        http://localhost:7474
+        When NOT to Use This:
+        ✗ Quick memory lookup (use get_memory)
+        ✗ Sector overview (use list_sectors)
+        ✗ Pattern recognition (use visualize_memories)
+
+        Output Formats:
+        - **mermaid**: Inline diagram (up to 20 connections shown)
+        - **neo4j**: Cypher query for Neo4j Browser at http://localhost:7474
+
+        Example Usage:
+        1. get_all_memories(limit=10) → Find ID: "4:abc123..."
+        2. visualize_relations(bubble_id="4", depth=2) → See connections
+        3. visualize_relations(bubble_id="4", format="neo4j") → Explore interactively
         """
         try:
+            # Extract numeric ID from various bubble_id formats
+            # Handles: "4", "4:abc123:14", "4:abc123-def456:14", etc.
+            bubble_id_numeric = str(bubble_id).split(":")[0]
+            try:
+                bubble_id_numeric = int(bubble_id_numeric)
+            except ValueError:
+                return f"""## Error
+
+Invalid bubble ID format: '{bubble_id}'
+
+**Expected formats:**
+- Simple numeric: "4"
+- Full element_id: "4:a6501d47-1704-4066-b4c0-de0595f56a0f:14"
+
+**To find bubble IDs**:
+- Use get_memory to search for memories
+- Use get_all_memories to see all memories
+- Look for the numeric ID at the start of the element_id
+"""
+
             driver = await get_driver()
 
             if format == "neo4j":
                 # Return Neo4j Browser query format
                 return f"""## Neo4j Browser Visualization
 
-**Bubble ID**: {bubble_id}
+**Bubble ID**: {bubble_id_numeric}
 **Depth**: {depth} hops
 
 ### Neo4j Browser Query
@@ -68,7 +103,7 @@ Copy this into Neo4j Browser (http://localhost:7474):
 
 ```cypher
 MATCH path = (b:Bubble) -[*1..{depth}] - (related:Bubble)
-WHERE id(b) = {bubble_id}
+WHERE id(b) = {bubble_id_numeric}
 AND b.valid_to IS NULL
 AND related.valid_to IS NULL
 RETURN path
@@ -92,18 +127,18 @@ This will show an interactive graph with all connected memories.
                 """
 
                 async with driver.session() as session:
-                    result = await session.run(query, bubble_id=int(bubble_id))
+                    result = await session.run(query, bubble_id=bubble_id_numeric)
                     record = await result.single()
 
                     if not record:
                         return f"""## Error
 
-No bubble found with ID: {bubble_id}
+No bubble found with ID: {bubble_id_numeric}
 
 **To find bubble IDs**:
 - Use get_memory to search for memories
 - Use get_all_memories to see all memories
-- The ID is shown in parentheses in results
+- Look for the numeric ID at the start of the element_id
 """
                     center = dict(record["center"])
                     connections = record["connections"]
@@ -113,7 +148,7 @@ No bubble found with ID: {bubble_id}
 
                     # Center node
                     center_content = center.get("content", "")[:30]
-                    center_label = f"{bubble_id[:8]}: {center_content}..."
+                    center_label = f"{bubble_id_numeric}: {center_content}..."
                     mermaid += f'    B1["{center_label}"]\n'
 
                     # Connection nodes

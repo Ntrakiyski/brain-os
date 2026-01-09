@@ -19,34 +19,44 @@ def register_instinctive_memory(mcp) -> None:
     @mcp.tool
     async def get_instinctive_memory(
         user_input: str = Field(
-            description="User's message to analyze for automatic memory activation"
+            description="Natural language context (e.g., 'I'm starting work on Project A', 'Now deploying to production', 'Meeting with FastTrack client'). The system extracts concepts and auto-activates relevant memories."
         ),
     ) -> str:
         """
-        Retrieve memories that automatically activate based on input.
+        Automatic memory activation based on context (The Oven Analogy).
 
-        Unlike get_memory (explicit search), this tool surfaces instinctive
-        knowledge without conscious search—like knowing the oven is hot
-        without thinking about it.
+        **This is different from get_memory**: Instead of explicit search, this
+        tool surfaces instinctive knowledge automatically—like knowing the oven
+        is hot without thinking about it.
 
-        This tool:
-        1. Analyzes input for concept triggers (fast Groq classification ~100ms)
-        2. Finds memories with low activation_threshold matching concepts
-        3. Returns instinctive memories organized by theme
+        How It Works:
+        1. Concept Extraction (~100ms): Groq analyzes input for key concepts
+        2. Pattern Matching: Matches concepts against entities, content, observations
+        3. Activation: Returns memories where activation_threshold < concept_salience
 
-        **Instinctive memories** are those marked with memory_type='instinctive',
-        which have low activation_threshold (0.2-0.3) and automatically surface
-        when relevant concepts are detected.
+        When to Use This:
+        ✓ Starting work on a project ("I'm starting work on Project A...")
+        ✓ Switching contexts ("Now I'm on deployment...")
+        ✓ Can't recall what you're forgetting
+        ✓ Feeling like you're missing important context
 
-        Use this when you want automatic knowledge activation, not explicit search.
-        Use get_memory for simple, direct searches.
+        When NOT to Use This:
+        ✗ You know what you're looking for (use get_memory)
+        ✗ Need comprehensive overview (use get_all_memories)
+        ✗ Complex query requiring synthesis (use get_memory_relations)
 
-        **Example**:
-            Input: "I'm starting work on Project A again"
-            Output: Automatically surfaces instinctive memories like:
-            - "Project A uses FastAPI, React + TypeScript, PostgreSQL, Redis"
-            - "PostgreSQL chosen for ACID transaction compliance"
-            - "Redis handles session caching with 30-minute TTL"
+        What Gets Activated:
+        Only memories marked with memory_type='instinctive' and low activation_threshold (0.2-0.3):
+        - Technology stack choices
+        - Pricing structures
+        - Deployment procedures
+        - Client preferences
+
+        Real-World Examples:
+        - "I'm deploying Project A" → Returns deployment procedures, stack choices
+        - "Meeting with FastTrack" → Returns client history, pricing, preferences
+        - "Building an API" → Returns framework choices, architecture decisions
+        - "Database design needed" → Returns database decisions, SQL vs NoSQL rationale
         """
         try:
             # Run the instinctive activation flow

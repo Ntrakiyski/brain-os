@@ -18,14 +18,41 @@ def register_visualize_memory(mcp) -> None:
     @mcp.tool
     async def visualize_memories(
         limit: int = Field(
-            default=50, description="Maximum number of memories to visualize", ge=1, le=200
+            default=50,
+            ge=1,
+            le=200,
+            description="Maximum memories to visualize (1-200). Use 50-100 for meaningful patterns"
         ),
     ) -> str:
         """
-        Generate a visual chart of memory distribution and statistics.
+        Visual representation of memory distribution and patterns.
 
-        Creates ASCII-based charts showing sector distribution, salience spread,
-        and temporal patterns of stored memories.
+        **Use this to see cognitive patterns at a glance.**
+
+        Creates ASCII-based visualizations showing:
+        - Sector distribution (bar chart)
+        - Salience distribution (histogram)
+        - Recent activity (last 7 days)
+        - Summary statistics
+
+        When to Use This:
+        ✓ Quick overview of cognitive state
+        ✓ Checking temporal patterns (am I focused?)
+        ✓ Seeing salience distribution
+        ✓ Visual complement to list_sectors()
+
+        When NOT to Use This:
+        ✗ Need specific memory details (use get_memory)
+        ✗ Want sector counts only (use list_sectors)
+        ✗ Exploring relationships (use visualize_relations)
+
+        Output Sections:
+        - Summary Statistics: Total, avg salience, active sectors
+        - Sector Distribution: Bar chart per sector
+        - Salience Distribution: Histogram (0.0-0.2 to 0.8-1.0)
+        - Recent Activity: Last 7 days activity chart
+
+        Pro Tip: Run this weekly to identify patterns in your cognitive activity.
         """
         try:
             results = await get_all_bubbles(limit)

@@ -246,7 +246,7 @@ async def search_instinctive_bubbles(concepts: list[str], salience_threshold: fl
     """
     Search for instinctive bubbles that match given concepts.
 
-    Phase 3 New: Used by get_instinctive_memory tool for automatic activation.
+    Phase 3 Enhanced: Searches in content, entities, observations, and sector.
 
     Args:
         concepts: List of concept strings to match
@@ -259,8 +259,12 @@ async def search_instinctive_bubbles(concepts: list[str], salience_threshold: fl
     conn = await get_connection()
 
     # Build dynamic WHERE clause with OR conditions for each concept
+    # Search in: content, entities (array), observations (array), sector
     concept_conditions = " OR ".join([
-        f"toLower(b.content) CONTAINS toLower('${{concept{i}}}')"
+        f"toLower(b.content) CONTAINS toLower($concept{i})"
+        f" OR toLower(b.sector) CONTAINS toLower($concept{i})"
+        f" OR ANY(entity IN b.entities WHERE toLower(entity) CONTAINS toLower($concept{i}))"
+        f" OR ANY(obs IN b.observations WHERE toLower(obs) CONTAINS toLower($concept{i}))"
         for i in range(len(concepts))
     ])
 
