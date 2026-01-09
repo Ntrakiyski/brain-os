@@ -197,6 +197,10 @@ async def tool_reference_resource() -> str:
 ## Agents
 - **summarize_project**: AI-powered project summaries
 
+## Deletion
+- **delete_memory**: Delete specific memory by ID (requires confirm=True)
+- **delete_all_memories**: Delete all memories (requires confirm="DELETE_ALL")
+
 ## Decision Guide
 | Need | Use |
 |------|-----|
@@ -206,6 +210,115 @@ async def tool_reference_resource() -> str:
 | Deep understanding | get_memory_relations |
 | Project overview | summarize_project |
 | Check balance | list_sectors |
+| Delete memory | delete_memory |
+"""
+
+
+@mcp.resource("brainos://prompts")
+async def prompts_resource() -> str:
+    """Available prompt templates for common workflows."""
+    return """
+# Brain OS Prompt Templates
+
+These are reusable prompt templates. To use them, ask Claude to run a specific prompt by name.
+
+## Available Prompts
+
+### 1. weekly_review
+**Use for:** End-of-week cognitive review and synthesis
+
+**How to use:**
+```
+"Use the weekly_review prompt"
+"Help me do a weekly review"
+```
+
+**What it does:**
+- Gets overview of all memories (limit=100)
+- Checks sector balance with list_sectors()
+- Visualizes patterns with visualize_memories()
+- Extracts key themes with get_memory_relations()
+- Creates Reflective summary memory
+
+**Best time:** Friday evening or Sunday evening
+
+---
+
+### 2. project_start
+**Use for:** Loading context when starting work on a project
+
+**How to use:**
+```
+"Use the project_start prompt for FastTrack"
+"I'm starting work on Project A, use the project_start prompt"
+```
+
+**What it does:**
+- Asks for project name
+- Runs get_instinctive_memory for auto-activation
+- Runs get_memory for recent project memories
+- Runs summarize_project for overview
+- Identifies knowledge gaps
+
+**Best time:** Monday morning, returning from break, context switching
+
+---
+
+### 3. decision_support
+**Use for:** Making decisions using past experience
+
+**How to use:**
+```
+"Use the decision_support prompt to help me choose between X and Y"
+"I need to make a decision, use the decision_support prompt"
+```
+
+**What it does:**
+- Asks what decision you're making
+- Searches for past similar decisions
+- Uses get_memory_relations for deep context
+- Synthesizes patterns from past decisions
+- Offers to store new decision as instinctive memory
+
+**Best time:** Before making important choices
+
+---
+
+### 4. cognitive_balance
+**Use for:** Checking and rebalancing cognitive state
+
+**How to use:**
+```
+"Use the cognitive_balance prompt"
+"Check my cognitive balance"
+"Am I cognitively balanced?"
+```
+
+**What it does:**
+- Runs list_sectors() to see distribution
+- Runs visualize_memories() for patterns
+- Analyzes balance against ideal distribution
+- Identifies imbalances
+- Suggests specific memory types to create
+- Offers to help create balancing memories
+
+**Best time:** Feeling scattered, overwhelmed, or stuck
+
+## Prompt Usage Tips
+
+1. **Be specific**: "Use the weekly_review prompt" works better than "help me review"
+2. **Provide context**: For project_start and decision_support, give project/decision details
+3. **Act on suggestions**: Prompts will suggest creating memories - follow through
+4. **Weekly routine**: Make weekly_review a Friday/Sunday habit
+
+## Ideal Cognitive Distribution
+
+When using cognitive_balance prompt, aim for:
+- Semantic: 25-35% (facts, decisions, knowledge)
+- Procedural: 20-30% (skills, workflows)
+- Episodic: 15-25% (events, experiences)
+- Emotional: 5-15% (feelings, reactions)
+- Reflective: 5-15% (insights, learnings)
 """
 
 
@@ -321,6 +434,21 @@ if __name__ == "__main__":
     logger.info("  - get_instinctive_memory: Auto-activate memories based on context")
     logger.info("  - get_memory_relations: Deep retrieval with contextual understanding")
     logger.info("  - visualize_relations: Visualize relationships between memories")
+    logger.info("")
+    logger.info("Deletion Tools:")
+    logger.info("  - delete_memory: Delete a specific memory by ID")
+    logger.info("  - delete_all_memories: Delete all memories (requires confirmation)")
+    logger.info("")
+    logger.info("Resources:")
+    logger.info("  - brainos://guide: Complete user guide")
+    logger.info("  - brainos://philosophy: Core philosophy and concepts")
+    logger.info("  - brainos://tool-reference: Quick tool reference")
+    logger.info("")
+    logger.info("Prompts:")
+    logger.info("  - weekly_review: Structured weekly review workflow")
+    logger.info("  - project_start: Context loading when starting work")
+    logger.info("  - decision_support: Decision-making using past experience")
+    logger.info("  - cognitive_balance: Check and rebalance cognitive state")
     logger.info(f"Health check: http://{host}:{port}/health")
 
     # Run the server directly (compatible with Coolify HTTPS termination)

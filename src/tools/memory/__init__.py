@@ -15,6 +15,9 @@ from src.tools.memory.instinctive_memory import register_instinctive_memory
 from src.tools.memory.get_relations import register_get_memory_relations
 from src.tools.memory.visualize_relations import register_visualize_relations
 
+# Deletion tools
+from src.tools.memory.delete_memory import register_delete_memory
+
 
 def register_memory_tools(mcp) -> None:
     """
@@ -36,6 +39,9 @@ def register_memory_tools(mcp) -> None:
     register_instinctive_memory(mcp)
     register_get_memory_relations(mcp)
     register_visualize_relations(mcp)
+
+    # Deletion tools
+    register_delete_memory(mcp)
 
 
 __all__ = ["register_memory_tools"]

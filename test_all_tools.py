@@ -1,6 +1,6 @@
 """
 Comprehensive Test Suite for Brain OS All Tools.
-Tests all 8 tools across Phase 2 and Phase 3.
+Tests all 11 tools across Phase 2, Phase 3, Agent, and Deletion tools.
 """
 
 import asyncio
@@ -275,7 +275,7 @@ async def test_all_tools():
         # TOOL 9: summarize_project
         # --------------------------------------------------------------------
         tools_tested += 1
-        print("\n[TOOL 9/9] summarize_project")
+        print("\n[TOOL 9/11] summarize_project")
         print("-" * 70)
         print("Testing AI-powered project summarization...")
         try:
@@ -300,6 +300,82 @@ async def test_all_tools():
         except Exception as e:
             print(f"[FAIL] FAILED: {e}")
             tools_failed += 1
+
+        # ========================================================================
+        # DELETION TOOLS
+        # ========================================================================
+
+        print("\n" + "=" * 70)
+        print("DELETION TOOLS")
+        print("=" * 70)
+
+        # First, get a valid bubble ID for testing delete_memory
+        print("\n[PREPARATION] Getting a bubble ID for deletion test...")
+        try:
+            result = await client.call_tool("get_all_memories", {"limit": 1})
+            data = result.data
+            bubble_id = None
+            for line in data.split('\n'):
+                if 'ID:' in line:
+                    # Extract ID from format like "ID: 4:abc123..."
+                    parts = line.split('ID:')[1].strip().split(':')[0]
+                    bubble_id = parts.strip()
+                    break
+
+            if bubble_id:
+                print(f"  Found bubble ID: {bubble_id}")
+
+                # --------------------------------------------------------------------
+                # TOOL 10: delete_memory (without confirmation - should warn)
+                # --------------------------------------------------------------------
+                tools_tested += 1
+                print("\n[TOOL 10/11] delete_memory (safety check)")
+                print("-" * 70)
+                try:
+                    result = await client.call_tool("delete_memory", {
+                        "bubble_id": bubble_id,
+                        "confirm": False  # Should return warning
+                    })
+                    data = result.data
+                    if "confirmation" in data.lower() or "confirm" in data.lower() or "⚠️" in data:
+                        print("[PASS] PASSED: Safety check working - requires confirmation")
+                        tools_passed += 1
+                    else:
+                        print(f"[FAIL] FAILED: Expected confirmation warning")
+                        tools_failed += 1
+                except Exception as e:
+                    print(f"[FAIL] FAILED: {e}")
+                    tools_failed += 1
+
+                # --------------------------------------------------------------------
+                # TOOL 11: delete_all_memories (without confirmation - should warn)
+                # --------------------------------------------------------------------
+                tools_tested += 1
+                print("\n[TOOL 11/11] delete_all_memories (safety check)")
+                print("-" * 70)
+                try:
+                    result = await client.call_tool("delete_all_memories", {
+                        "confirm": "WRONG"  # Should return warning
+                    })
+                    data = result.data
+                    if "delete_all" in data.lower() or "confirmation" in data.lower() or "⚠️" in data:
+                        print("[PASS] PASSED: Safety check working - requires 'DELETE_ALL'")
+                        tools_passed += 1
+                    else:
+                        print(f"[FAIL] FAILED: Expected confirmation warning")
+                        tools_failed += 1
+                except Exception as e:
+                    print(f"[FAIL] FAILED: {e}")
+                    tools_failed += 1
+
+            else:
+                print("  [SKIP] No bubble ID found, skipping deletion tests")
+
+        except Exception as e:
+            print(f"  [ERROR] Could not get bubble ID: {e}")
+            # Still count as tested but failed
+            tools_tested += 2
+            tools_failed += 2
 
         # ========================================================================
         # TEST SUMMARY

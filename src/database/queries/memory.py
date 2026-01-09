@@ -306,3 +306,65 @@ async def search_instinctive_bubbles(concepts: list[str], salience_threshold: fl
             ))
         logger.info(f"Found {len(bubbles)} instinctive bubbles for concepts: {concepts}")
         return bubbles
+
+
+async def delete_bubble(bubble_id: str) -> bool:
+    """
+    Delete a single bubble by its internal node ID.
+
+    Uses soft deletion by setting valid_to timestamp.
+    This preserves audit trail and maintains temporal evolution tracking.
+
+    Args:
+        bubble_id: The numeric node ID (element_id) of the bubble
+
+    Returns:
+        True if deleted, False if not found
+    """
+    conn = await get_connection()
+    now = datetime.now(timezone.utc)
+
+    cypher = """
+    MATCH (b:Bubble)
+    WHERE element_id(b) = $bubble_id
+    AND b.valid_to IS NULL
+    SET b.valid_to = $now
+    RETURN b.content as content
+    """
+
+    async with conn.session() as session:
+        result = await session.run(cypher, bubble_id=bubble_id, now=now.isoformat())
+        record = await result.single()
+        if record:
+            logger.info(f"Deleted bubble {bubble_id}: {record['content'][:50]}...")
+            return True
+        logger.warning(f"Bubble {bubble_id} not found for deletion")
+        return False
+
+
+async def delete_all_bubbles() -> int:
+    """
+    Delete all active bubbles from the database.
+
+    Uses soft deletion by setting valid_to timestamp on all bubbles.
+    This preserves audit trail and maintains temporal evolution tracking.
+
+    Returns:
+        Number of bubbles deleted
+    """
+    conn = await get_connection()
+    now = datetime.now(timezone.utc)
+
+    cypher = """
+    MATCH (b:Bubble)
+    WHERE b.valid_to IS NULL
+    SET b.valid_to = $now
+    RETURN count(b) as deleted_count
+    """
+
+    async with conn.session() as session:
+        result = await session.run(cypher, now=now.isoformat())
+        record = await result.single()
+        count = record["deleted_count"] if record else 0
+        logger.info(f"Deleted all {count} bubbles")
+        return count

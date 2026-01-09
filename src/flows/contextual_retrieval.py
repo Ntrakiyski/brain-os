@@ -221,12 +221,11 @@ class ContextualQueryNode(AsyncNode):
 
         async with driver.session() as session:
             result = await session.run(query, **params)
-            records = await result.data()
 
             bubbles = []
             all_relations = []
 
-            for record in records:
+            async for record in result:
                 node = record["b"]
                 bubbles.append({
                     "id": str(node.element_id),
