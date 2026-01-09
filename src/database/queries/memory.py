@@ -368,3 +368,41 @@ async def delete_all_bubbles() -> int:
         count = record["deleted_count"] if record else 0
         logger.info(f"Deleted all {count} bubbles")
         return count
+
+
+async def get_bubble_count(sector: Optional[str] = None) -> int:
+    """
+    Count active bubbles in the database, optionally filtered by sector.
+
+    Used for visualization resources and statistics.
+
+    Args:
+        sector: Optional sector name to filter by (Episodic, Semantic, etc.)
+
+    Returns:
+        Count of active bubbles
+    """
+    conn = await get_connection()
+
+    if sector:
+        cypher = """
+        MATCH (b:Bubble)
+        WHERE b.sector = $sector
+        AND b.valid_to IS NULL
+        RETURN count(b) as bubble_count
+        """
+        params = {"sector": sector}
+    else:
+        cypher = """
+        MATCH (b:Bubble)
+        WHERE b.valid_to IS NULL
+        RETURN count(b) as bubble_count
+        """
+        params = {}
+
+    async with conn.session() as session:
+        result = await session.run(cypher, **params)
+        record = await result.single()
+        count = record["bubble_count"] if record else 0
+        logger.debug(f"Counted {count} bubbles" + (f" in sector {sector}" if sector else ""))
+        return count

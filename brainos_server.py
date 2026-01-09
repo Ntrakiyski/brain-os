@@ -323,6 +323,138 @@ When using cognitive_balance prompt, aim for:
 
 
 # =============================================================================
+# DYNAMIC VISUALIZATION RESOURCES
+# =============================================================================
+
+@mcp.resource("brainos://visualize/sectors{?format}")
+async def sectors_visualization_resource(format: str = "ascii") -> str:
+    """Generate sector distribution visualization. format: 'ascii' (default) or 'json'."""
+    from src.database.connection import get_driver
+    from src.database.queries.memory import get_bubble_count
+
+    driver = await get_driver()
+
+    # Get sector counts
+    sectors = ["Episodic", "Semantic", "Procedural", "Emotional", "Reflective"]
+    counts = {}
+    total = 0
+
+    for sector in sectors:
+        count = await get_bubble_count(driver, sector)
+        counts[sector] = count
+        total += count
+
+    if total == 0:
+        return "No memories found in the Synaptic Graph."
+
+    if format.lower() == "json":
+        import json
+        return json.dumps({
+            "total": total,
+            "sectors": {
+                sector: {
+                    "count": counts[sector],
+                    "percentage": round((counts[sector] / total) * 100, 1)
+                }
+                for sector in sectors
+            }
+        }, indent=2)
+
+    # ASCII visualization
+    lines = []
+    lines.append(f"Brain OS Cognitive Distribution (Total: {total} memories)")
+    lines.append("=" * 50)
+
+    for sector in sectors:
+        count = counts[sector]
+        percentage = (count / total) * 100
+        bar_length = int(percentage / 2)
+        bar = "█" * bar_length
+        lines.append(f"{sector:12} |{bar:<50} {count} ({percentage:.1f}%)")
+
+    lines.append("=" * 50)
+    lines.append("\nIdeal Distribution:")
+    lines.append("  Semantic:     25-35%")
+    lines.append("  Procedural:   20-30%")
+    lines.append("  Episodic:     15-25%")
+    lines.append("  Emotional:     5-15%")
+    lines.append("  Reflective:    5-15%")
+
+    return "\n".join(lines)
+
+
+@mcp.resource("brainos://visualize/relations/{bubble_id}")
+async def relations_visualization_resource(bubble_id: str) -> str:
+    """Generate Mermaid diagram for a memory's relationships."""
+    from src.database.connection import get_driver
+    from neo4j import AsyncGraphDatabase
+
+    driver = await get_driver()
+
+    # Extract numeric ID from various formats
+    import re
+    match = re.search(r'\d+', bubble_id)
+    if not match:
+        return "Error: Invalid bubble ID format. Please provide a numeric ID."
+    numeric_id = int(match.group())
+
+    query = """
+        MATCH (b:Bubble)
+        WHERE id(b) = $id AND b.valid_to IS NULL
+        OPTIONAL MATCH (b)-[r:LINKED]->(other:Bubble)
+        WHERE other.valid_to IS NULL
+        RETURN b, collect({
+            id: id(other),
+            content: other.content,
+            sector: other.sector,
+            type: r.type
+        }) as relations
+    """
+
+    async with driver.session() as session:
+        result = await session.run(query, id=numeric_id)
+        record = await result.single()
+
+        if not record:
+            return f"Memory with ID {numeric_id} not found."
+
+        node = record["b"]
+        relations = record["relations"]
+
+        # Build Mermaid diagram
+        lines = []
+        lines.append("```mermaid")
+        lines.append("graph LR")
+        lines.append(f'    Center["{node["sector"]}<br/>"{node["content"][:40]}...""]')
+        lines.append("    Center(Center)")
+
+        for i, rel in enumerate(relations[:10], 1):  # Limit to 10 relations
+            target_id = rel["id"]
+            content = rel["content"][:30]
+            sector = rel["sector"]
+            rel_type = rel["type"]
+            lines.append(f'    Node{i}["{sector}<br/>{content}...""]')
+            lines.append(f'    Center -->|{rel_type}| Node{i}')
+
+        if len(relations) > 10:
+            lines.append(f"    More[\"...and {len(relations) - 10} more\"]")
+            lines.append("    Center -.-> More")
+
+        lines.append("```")
+        lines.append("")
+        lines.append(f"**Total Relations:** {len(relations)}")
+        lines.append("")
+        lines.append("**Neo4j Browser Query:**")
+        lines.append(f"```cypher")
+        lines.append(f'MATCH (b)-[r:LINKED]->(other)')
+        lines.append(f'WHERE id(b) = {numeric_id}')
+        lines.append(f'RETURN b, r, other')
+        lines.append(f"```")
+
+        return "\n".join(lines)
+
+
+# =============================================================================
 # PROMPTS - Reusable prompt templates
 # =============================================================================
 
@@ -433,6 +565,9 @@ if __name__ == "__main__":
     logger.info("  - brainos://guide: Complete user guide")
     logger.info("  - brainos://philosophy: Core philosophy and concepts")
     logger.info("  - brainos://tool-reference: Quick tool reference")
+    logger.info("  - brainos://prompts: Prompt templates guide")
+    logger.info("  - brainos://visualize/sectors: Sector distribution visualization")
+    logger.info("  - brainos://visualize/relations/{id}: Relationship diagrams")
     logger.info("")
     logger.info("Prompts:")
     logger.info("  - weekly_review: Structured weekly review workflow")
