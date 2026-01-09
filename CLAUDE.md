@@ -157,22 +157,59 @@ MCP_PORT=9131
 - **Organs** → `AsyncFlow`: Specialized agent clusters (Researcher, Technical Auditor, Synthesizer)
 - **Organisms** → Nested `AsyncFlow`: Multi-agent workflows (Ingestion, Weekly Synthesis)
 
-### Project Structure (Phase 1 - Completed)
+### Project Structure (Phase 3 - Design Complete)
 ```
 0brainos/
 ├── src/
+│   ├── core/
+│   │   └── config.py          # Frozen dataclasses for configuration
 │   ├── database/
 │   │   ├── connection.py      # Neo4j async driver with global connection singleton
-│   │   └── queries.py         # Granular Cypher query functions (upsert, search, get_all)
+│   │   └── queries/           # Modular query organization
+│   │       ├── __init__.py
+│   │       ├── memory.py      # Bubble CRUD operations
+│   │       └── relations.py   # Relationship queries (Phase 3)
+│   ├── flows/                 # PocketFlow workflows (replaces src/agents/)
+│   │   ├── __init__.py
+│   │   ├── instinctive_activation.py    # Instinctive memory activation flow
+│   │   ├── contextual_retrieval.py      # Pre/post-query contextual retrieval
+│   │   ├── entity_extraction.py         # Entity extraction from bubbles
+│   │   └── summarize_project.py         # Project summary flow (migrated)
+│   ├── tools/                 # MCP tool wrappers
+│   │   ├── __init__.py
+│   │   ├── memory/            # Memory-related tools
+│   │   │   ├── __init__.py
+│   │   │   ├── create_memory.py         # create_memory (enhanced Phase 3)
+│   │   │   ├── get_memory.py            # get_memory, get_all_memories
+│   │   │   ├── list_sectors.py          # list_sectors
+│   │   │   ├── visualize_memories.py    # visualize_memories
+│   │   │   ├── instinctive_memory.py    # get_instinctive_memory (Phase 3)
+│   │   │   ├── get_relations.py         # get_memory_relations (Phase 3)
+│   │   │   └── visualize_relations.py   # visualize_relations (Phase 3)
+│   │   └── agents/            # Flow-based tool wrappers
+│   │       ├── __init__.py
+│   │       └── summarize_project.py     # summarize_project (uses PocketFlow)
 │   └── utils/
-│       └── schemas.py         # Pydantic validation models (BubbleCreate, BubbleResponse)
+│       ├── schemas.py         # Pydantic validation models
+│       └── llm.py             # LLM client factory (Groq, OpenRouter)
 ├── brainos_server.py          # ROOT-level MCP server entry point (FastMCP)
 ├── Dockerfile                 # Container image with HTTP transport on port 9131
 ├── docker-compose.yml         # Multi-service: brainos + neo4j
-├── pyproject.toml             # Dependencies (fastmcp, neo4j, groq, pydantic)
+├── pyproject.toml             # Dependencies (fastmcp, pocketflow, neo4j, groq, pydantic)
 ├── CLAUDE.md                  # This file - project documentation
+├── docs/
+│   ├── project/
+│   │   ├── inspiration.md     # Project inspiration (Pickle OS concept)
+│   │   ├── full_project_idea.md # Master specification
+│   │   ├── neo4j_memory.md    # Neo4j implementation notes
+│   │   ├── phase1/            # Phase 1 documentation
+│   │   ├── phase2/            # Phase 2 documentation
+│   │   └── phase3/            # Phase 3 documentation (design complete)
+│   └── libraries/             # External library documentation
 └── fastmcp_demo_app/          # FastMCP learning examples
 ```
+
+**Architecture Change (Phase 3)**: `src/agents/` replaced by `src/flows/` using PocketFlow AsyncNode/AsyncFlow patterns.
 
 ### Key Concepts
 
@@ -196,6 +233,35 @@ Phase 1 successfully established the foundational infrastructure:
 - ✅ HTTP transport on port 9131 with stateless mode
 - ✅ Health check endpoint at `/health`
 
+### Phase 2: ✅ COMPLETED
+Phase 2 established the scalable foundation for 20+ agents and 70+ tools:
+- ✅ Modular folder structure (tools organized by function in separate files)
+- ✅ BaseAgent pattern with configuration-driven execution
+- ✅ LLM utility with Groq + OpenRouter client factories
+- ✅ First agent built: `summarize_project` (AI-powered project summaries)
+- ✅ 3-step pattern for adding new agents without code changes
+- ✅ PocketFlow installed (available for future workflow orchestration)
+- ✅ brainos_server.py simplified from 154 to 65 lines
+
+**New Tool Added:**
+- `summarize_project`: Retrieves project memories and generates AI summaries using OpenRouter
+
+**Key Design Principle:** To change agent behavior, modify `AgentConfig`. Never touch the agent code.
+
+### Phase 3: 🔄 DESIGN COMPLETE
+Phase 3 transforms Brain OS into a cognitive operating system with instinctive memory and contextual retrieval:
+- 🔄 **Design Complete**: Comprehensive specification in `docs/project/phase3/`
+- 🔄 **Key Features**:
+  - Instinctive memory system (auto-activation without conscious search)
+  - Contextual retrieval agents (pre-query → DB → post-query)
+  - Entity-observation capabilities with "bubbles" terminology
+  - Relationship visualization (Mermaid + Neo4j Browser)
+- 🔄 **Architecture Migration**: Replace BaseAgent with PocketFlow AsyncNode/AsyncFlow
+- 🔄 **New Tools**: `get_instinctive_memory`, `get_memory_relations`, `visualize_relations`
+- 🔄 **Enhanced Tools**: `create_memory` gains memory_type, activation_threshold, entities, observations
+
+**See `docs/project/phase3/phase-overview.md` for complete specification.**
+
 ### HTTP Deployment Notes:
 - **Local**: Works perfectly - `http://localhost:9131/mcp`
 - **Docker Compose**: Works locally with both services (brainos + neo4j)
@@ -205,7 +271,7 @@ Phase 1 successfully established the foundational infrastructure:
   - Server is configured for proxy-friendly operation (direct Python mode, not CLI)
   - Based on chrome-mcp pattern proven to work with Coolify HTTPS
 
-See `docs/project/phase1/` for complete Phase 1 documentation and `docs/project/full_project_idea.md` for the master specification.
+See `docs/project/phase1/` for Phase 1 documentation, `docs/project/phase2/` for Phase 2 documentation, and `docs/project/full_project_idea.md` for the master specification.
 
 ## FastMCP Patterns
 
@@ -235,6 +301,110 @@ async def create_memory(
 - Return user-friendly formatted strings, not raw data
 
 **Version Pinning**: Use `fastmcp>=2.14.2` to allow patch updates while avoiding breaking changes.
+
+## PocketFlow Pattern (Phase 3)
+
+Brain OS uses **PocketFlow AsyncNode/AsyncFlow** patterns for workflow orchestration:
+- **Flow Layer** (`src/flows/`): PocketFlow workflows with AsyncNode implementations
+- **Tool Layer** (`src/tools/`): MCP tool wrappers that expose flows to Claude
+
+### Creating a New Flow (3-Step Pattern)
+
+**Step 1: Define the AsyncNode Flow**
+```python
+# src/flows/my_flow.py
+from pocketflow import AsyncNode, AsyncFlow
+
+class MyProcessNode(AsyncNode):
+    """AsyncNode for processing input."""
+
+    async def prep_async(self, shared):
+        # Extract from shared store
+        return shared["input"]
+
+    async def exec_async(self, inputs):
+        # Execute core logic (LLM call, DB query, etc.)
+        return await process_logic(inputs)
+
+    async def post_async(self, shared, prep_res, exec_res):
+        # Write to shared store, return action
+        shared["output"] = exec_res
+        return "default"
+
+# Wire the flow
+my_node = MyProcessNode()
+my_flow = AsyncFlow(start=my_node)
+```
+
+**Step 2: Create MCP Tool Wrapper**
+```python
+# src/tools/my_tool.py
+from pydantic import Field
+from src.flows.my_flow import my_flow
+
+def register_my_tool(mcp) -> None:
+    @mcp.tool
+    async def my_tool(
+        input: str = Field(description="Input to process")
+    ) -> str:
+        """Process input using PocketFlow workflow."""
+        from src.database.connection import get_driver
+
+        # Prepare shared store
+        shared = {
+            "neo4j_driver": get_driver(),
+            "input": input
+        }
+
+        # Run the flow
+        await my_flow.run_async(shared)
+
+        # Return result
+        return shared.get("output", "No output generated")
+```
+
+**Step 3: Register the Tool**
+```python
+# src/tools/__init__.py
+from src.tools.my_tool import register_my_tool
+
+def register_all_tools(mcp) -> None:
+    register_my_tool(mcp)  # Add this line
+```
+
+### PocketFlow Node Lifecycle
+
+Each AsyncNode has three async methods:
+- `prep_async(shared)`: Read/prepare from shared store → returns prep_res
+- `exec_async(prep_res)`: Execute core logic (LLM, DB) → returns exec_res
+- `post_async(shared, prep_res, exec_res)`: Write to shared, return action
+
+### Flow Chaining Patterns
+
+```python
+# Sequential flow
+node1 >> node2 >> node3
+
+# Conditional flow
+node1 - "action_name" >> node2
+
+# Mixed flow
+node1 >> (node2 - "special" >> node3) >> node4
+```
+
+### LLM Utility
+
+Use `src/utils/llm.py` for direct LLM access:
+
+```python
+from src.utils.llm import get_groq_client, get_openrouter_client
+
+# Fast actions (~100ms)
+groq = get_groq_client()
+
+# Deep thinking (~3-10s)
+openrouter = await get_openrouter_client()
+```
 
 ## Dual-LLM Strategy
 
