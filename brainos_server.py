@@ -326,11 +326,10 @@ When using cognitive_balance prompt, aim for:
 # PROMPTS - Reusable prompt templates
 # =============================================================================
 
-@mcp.prompt("weekly_review")
-async def weekly_review_prompt() -> str:
+@mcp.prompt
+async def weekly_review() -> str:
     """Generate a structured weekly review of all memories."""
-    return """
-Please help me with a weekly review of my Brain OS memories.
+    return """Please help me with a weekly review of my Brain OS memories.
 
 Follow this structure:
 1. **Overview**: Run get_all_memories(limit=100) to see everything
@@ -339,56 +338,48 @@ Follow this structure:
 4. **Key Themes**: Use get_memory_relations with query "What were the main themes this week?" and time_scope="recent"
 5. **Synthesis**: Create a Reflective memory summarizing insights
 
-For each insight you identify, ask if I want to store it as a Reflective memory.
-"""
+For each insight you identify, ask if I want to store it as a Reflective memory."""
 
 
-@mcp.prompt("project_start")
-async def project_start_prompt() -> str:
+@mcp.prompt
+async def project_start(project: str) -> str:
     """Prepare context when starting work on a project."""
-    return """
-I'm starting work on a project. Help me load relevant context.
+    return f"""I'm starting work on a project: {project}
 
-Steps:
-1. Ask for the project name
-2. Run get_instinctive_memory("I'm starting work on {project}")
-3. Run get_memory(query="{project}", limit=10)
-4. Run summarize_project(project="{project}")
-5. Identify gaps in my knowledge and suggest what to store
+Help me load relevant context:
+1. Run get_instinctive_memory("I'm starting work on {project}")
+2. Run get_memory(query="{project}", limit=10)
+3. Run summarize_project(project="{project}")
+4. Identify gaps in my knowledge and suggest what to store
 
 Return a concise context summary with:
 - Project overview
 - Key decisions
 - Action items
-- Missing information I should capture
-"""
+- Missing information I should capture"""
 
 
-@mcp.prompt("decision_support")
-async def decision_support_prompt() -> str:
+@mcp.prompt
+async def decision_support(decision: str) -> str:
     """Support decision-making by retrieving past context."""
-    return """
-I need to make a decision. Help me use past experience to inform it.
+    return f"""I need to make a decision: {decision}
 
-Steps:
-1. Ask what decision I'm making
-2. Search for past similar decisions: get_memory(query="{keywords}")
-3. Deep retrieval: get_memory_relations(query="Should I {option_a} or {option_b}?", conversation_history=[...])
-4. Synthesize patterns from past decisions
-5. After I decide, offer to store it as an instinctive Semantic memory
+Help me use past experience to inform it:
+1. Search for past similar decisions: get_memory(query="{decision}")
+2. Deep retrieval: get_memory_relations with context
+3. Synthesize patterns from past decisions
+4. After I decide, offer to store it as an instinctive Semantic memory
 
 Extract from past decisions:
 - What criteria mattered
 - What trade-offs I accepted
-- What I learned
-"""
+- What I learned"""
 
 
-@mcp.prompt("cognitive_balance")
-async def cognitive_balance_prompt() -> str:
+@mcp.prompt
+async def cognitive_balance() -> str:
     """Check and rebalance cognitive state."""
-    return """
-Help me check my cognitive balance and suggest rebalancing.
+    return """Help me check my cognitive balance and suggest rebalancing.
 
 Steps:
 1. Run list_sectors() to see current distribution
@@ -401,8 +392,7 @@ Steps:
 For each imbalance:
 - Explain why it matters
 - Suggest 3 specific memories to create
-- Offer to help create them
-"""
+- Offer to help create them"""
 
 
 # =============================================================================
