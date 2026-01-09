@@ -56,6 +56,11 @@ if __name__ == "__main__":
     logger.info("  - list_sectors: List all cognitive sectors")
     logger.info("  - visualize_memories: Generate memory distribution chart")
     logger.info("  - summarize_project: Summarize project memories using AI")
+    logger.info("")
+    logger.info("Phase 3 Tools:")
+    logger.info("  - get_instinctive_memory: Auto-activate memories based on context")
+    logger.info("  - get_memory_relations: Deep retrieval with contextual understanding")
+    logger.info("  - visualize_relations: Visualize relationships between memories")
     logger.info(f"Health check: http://{host}:{port}/health")
 
     # Run the server directly (compatible with Coolify HTTPS termination)

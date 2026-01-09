@@ -72,3 +72,17 @@ async def close_connection() -> None:
     if _connection:
         await _connection.close()
         _connection = None
+
+
+async def get_driver():
+    """
+    Get the raw Neo4j driver for use with PocketFlow flows.
+
+    This is a convenience function for PocketFlow AsyncNodes that need
+    direct access to the Neo4j driver for custom queries.
+
+    Returns:
+        The Neo4j AsyncGraphDatabase.driver instance
+    """
+    connection = await get_connection()
+    return connection.driver
