@@ -26,6 +26,23 @@ def register_create_memory(mcp) -> None:
             description="Origin of the data (e.g., transcript, direct_chat)",
         ),
         salience: float = Field(default=0.5, description="Importance score from 0.0 to 1.0"),
+        # Phase 3 parameters
+        memory_type: str = Field(
+            default="thinking",
+            description="Memory type: instinctive (auto-activates), thinking (explicit recall), or dormant (low priority)",
+        ),
+        activation_threshold: float = Field(
+            default=None,
+            description="Salience level that triggers automatic activation (0.0-1.0). Auto-calculated if not specified.",
+        ),
+        entities: list[str] = Field(
+            default=[],
+            description="Key entities mentioned (e.g., people, projects, technologies)",
+        ),
+        observations: list[str] = Field(
+            default=[],
+            description="Additional observations or context notes",
+        ),
     ) -> str:
         """
         Store a new memory in the Synaptic Graph.
@@ -36,7 +53,14 @@ def register_create_memory(mcp) -> None:
         try:
             # Validate and create the bubble
             bubble_data = BubbleCreate(
-                content=content, sector=sector, source=source, salience=salience
+                content=content,
+                sector=sector,
+                source=source,
+                salience=salience,
+                memory_type=memory_type,
+                activation_threshold=activation_threshold,
+                entities=entities,
+                observations=observations,
             )
             result = await upsert_bubble(bubble_data)
 

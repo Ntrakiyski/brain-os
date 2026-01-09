@@ -89,7 +89,7 @@ Please provide a summary with these sections:
 Format your response in Markdown."""
 
         # Get OpenRouter client and model
-        client = await get_openrouter_client()
+        client = get_openrouter_client()
         model = get_openrouter_model(self.config.model_task)
 
         # Call LLM

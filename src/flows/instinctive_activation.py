@@ -217,7 +217,7 @@ async def activate_instinctive_memories(user_input: str) -> list:
     from src.database.connection import get_driver
 
     shared = {
-        "neo4j_driver": get_driver(),
+        "neo4j_driver": await get_driver(),
         "user_input": user_input
     }
 

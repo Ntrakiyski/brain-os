@@ -51,7 +51,7 @@ def register_instinctive_memory(mcp) -> None:
         try:
             # Run the instinctive activation flow
             shared = {
-                "neo4j_driver": get_driver(),
+                "neo4j_driver": await get_driver(),
                 "user_input": user_input
             }
 

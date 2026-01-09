@@ -53,7 +53,7 @@ def register_visualize_relations(mcp) -> None:
         http://localhost:7474
         """
         try:
-            driver = get_driver()
+            driver = await get_driver()
 
             if format == "neo4j":
                 # Return Neo4j Browser query format
@@ -68,7 +68,7 @@ Copy this into Neo4j Browser (http://localhost:7474):
 
 ```cypher
 MATCH path = (b:Bubble) -[*1..{depth}] - (related:Bubble)
-WHERE element_id(b) = {bubble_id}
+WHERE id(b) = {bubble_id}
 AND b.valid_to IS NULL
 AND related.valid_to IS NULL
 RETURN path
@@ -78,20 +78,21 @@ This will show an interactive graph with all connected memories.
 """
             else:
                 # Mermaid format - query Neo4j for relationships
+                # Simplified query: only direct relationships (depth 1)
                 query = """
                     MATCH (center:Bubble)
-                    WHERE element_id(center) = $bubble_id
-                    MATCH path = (center)-[r:LINKED*1..{depth}]-(related:Bubble)
+                    WHERE id(center) = $bubble_id
+                    MATCH (center)-[r:LINKED]->(related:Bubble)
                     WHERE related.valid_to IS NULL
                     RETURN center,
-                           collect(DISTINCT {{
+                           collect(DISTINCT {
                                bubble: related,
-                               relation_type: head([(center)-[r:LINKED]-(related) | r.type])
-                           }}) as connections
+                               relation_type: r.type
+                           }) as connections
                 """
 
                 async with driver.session() as session:
-                    result = await session.run(query, bubble_id=int(bubble_id), depth=depth)
+                    result = await session.run(query, bubble_id=int(bubble_id))
                     record = await result.single()
 
                     if not record:

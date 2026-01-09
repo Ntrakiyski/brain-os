@@ -158,7 +158,7 @@ class ContextualQueryNode(AsyncNode):
         user_input = shared.get("user_input", "")
 
         if not driver:
-            driver = get_driver()
+            driver = await get_driver()
 
         return driver, context, user_input
 
@@ -190,7 +190,7 @@ class ContextualQueryNode(AsyncNode):
 
         # Build OR conditions for search terms
         or_conditions = " OR ".join([
-            f"toLower(b.content) CONTAINS toLower('${{search{i}}}')"
+            f"toLower(b.content) CONTAINS toLower($search{i})"
             for i in range(len(search_terms))
         ])
         query += f" AND ({or_conditions})"
@@ -210,11 +210,11 @@ class ContextualQueryNode(AsyncNode):
 
         query += """
             RETURN b,
-                   [r=(b)-[rel:LINKED]->(other) | {{
-                       from: element_id(b),
-                       to: element_id(other),
+                   [(b)-[rel:LINKED]->(other) | {
+                       from: id(b),
+                       to: id(other),
                        type: rel.type
-                   }}] as relations
+                   }] as relations
             ORDER BY b.salience DESC
             LIMIT 20
         """
@@ -428,7 +428,7 @@ async def retrieve_with_context(
     Returns:
         Synthesis dictionary with themes, highlights, relationships
     """
-    driver = get_driver()
+    driver = await get_driver()
 
     shared = {
         "neo4j_driver": driver,

@@ -70,15 +70,15 @@ def register_get_memory(mcp) -> None:
                 sector_counts[bubble.sector] = sector_counts.get(bubble.sector, 0) + 1
 
             output = [
-                f"📊 Total Memories: {len(results)}\n",
-                f"📈 Sector Distribution:\n",
+                f"[STATS] Total Memories: {len(results)}\n",
+                f"[SECTORS] Sector Distribution:\n",
             ]
             for sector, count in sorted(sector_counts.items()):
                 percentage = (count / len(results)) * 100
-                bar = "█" * int(percentage / 5)
-                output.append(f"  {sector:12} │ {bar} {count} ({percentage:.1f}%)\n")
+                bar = "#" * int(percentage / 5)
+                output.append(f"  {sector:12} | {bar} {count} ({percentage:.1f}%)\n")
 
-            output.append(f"\n{'─' * 60}\n")
+            output.append(f"\n{'-' * 60}\n")
             output.append("Recent Memories:\n\n")
 
             for i, bubble in enumerate(results, 1):
