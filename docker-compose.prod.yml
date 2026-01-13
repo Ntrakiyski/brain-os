@@ -1,15 +1,16 @@
 services:
-  # BrainOS MCP Server (local development)
+  # BrainOS MCP Server (HTTP transport for Claude Web)
+  # Connects to external Neo4j instance deployed separately in Coolify
   brainos:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: brainos-server-local
-    ports:
-      - "9131:9131"  # Exposed for local testing
+    container_name: brainos-server
+    expose:
+      - "9131"  # HTTP MCP endpoint (internal only - Coolify proxy connects here)
     environment:
-      # Neo4j connection (local - using host.docker.internal for Docker Desktop)
-      - NEO4J_URI=${NEO4J_URI:-bolt://host.docker.internal:7687}
+      # Neo4j connection (external instance - set in Coolify environment variables)
+      - NEO4J_URI=${NEO4J_URI:-bolt://localhost:7687}
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
 
@@ -24,25 +25,36 @@ services:
       - OPENROUTER_CREATIVE_MODEL=${OPENROUTER_CREATIVE_MODEL:-anthropic/claude-sonnet-4}
       - OPENROUTER_PLANNING_MODEL=${OPENROUTER_PLANNING_MODEL:-anthropic/claude-opus-4}
 
+      # Email Webhook (N8N)
+      - EMAIL_WEBHOOK_URL=${EMAIL_WEBHOOK_URL}
+      - EMAIL_AUTHORIZATION=${EMAIL_AUTHORIZATION}
+
       # Phase 5.1: Obsidian Integration
       - OBSIDIAN_MCP_URL=http://obsidian-mcp:8001/mcp
+
+      # Phoenix Cloud Observability (set in Coolify environment variables)
+      - PHOENIX_COLLECTOR_ENDPOINT=${PHOENIX_COLLECTOR_ENDPOINT}
+      - PHOENIX_API_KEY=${PHOENIX_API_KEY}
 
       - MCP_PORT=${MCP_PORT:-9131}
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
 
-  # Phase 5.1: Obsidian MCP Server (local development)
+  # Phase 5.1: Obsidian MCP Server (production)
   obsidian-mcp:
     build:
       context: ./obsidian-mcp
       dockerfile: Dockerfile
-    container_name: obsidian-mcp-local
-    ports:
-      - "8001:8001"  # Exposed for local Brain OS to reach
+    container_name: obsidian-mcp-prod
+    expose:
+      - "8001"  # Internal only - Brain OS connects via Docker network
     volumes:
-      # Bind mount to local Windows folder
-      - C:/Users/nikol/Desktop/brain-os-vault:/vault
+      - obsidian-vault:/vault
     environment:
       - MEMORY_DIR=/vault
       - PORT=8001
     restart: unless-stopped
+
+volumes:
+  obsidian-vault:
+    driver: local
