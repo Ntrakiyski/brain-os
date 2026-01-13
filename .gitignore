@@ -35,3 +35,8 @@ Thumbs.db
 *.db
 neo4j/
 nul
+  
+"# Claude Desktop Config (contains API keys)"  
+"claude_desktop_config.json"  
+"*_desktop_config.json"  
+"*.mcp_config.json"  
