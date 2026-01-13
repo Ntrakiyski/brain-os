@@ -8,6 +8,8 @@ This flow implements a 3-agent system:
 3. PostQuerySynthesizeNode: Synthesize results and find relationships (OpenRouter ~2-5s)
 
 This is an "Organ" in the Fractal DNA architecture - specialized agent cluster.
+
+Phase 4 Enhancement: Added Context logging and progress reporting.
 """
 
 import logging
@@ -27,6 +29,8 @@ class PreQueryContextNode(AsyncNode):
 
     Uses Groq (fast ~100ms) for context understanding.
     Expands or narrows search based on conversation context.
+
+    Phase 4 Enhancement: Added Context logging.
     """
 
     async def prep_async(self, shared):
@@ -50,6 +54,8 @@ class PreQueryContextNode(AsyncNode):
         """
         Execute context analysis using Groq LLM.
 
+        Phase 4 Enhancement: Added debug logging.
+
         Args:
             inputs: Tuple of (user_input, conversation_history, time_scope, salience_filter)
 
@@ -57,6 +63,10 @@ class PreQueryContextNode(AsyncNode):
             Context dictionary with intent, concepts, time_scope, salience_filter
         """
         user_input, conversation_history, time_scope, salience_filter = inputs
+
+        # Phase 4: Debug logging
+        logger.debug("PreQueryContext: Starting context analysis")
+        logger.debug(f"Input: {user_input[:100] if len(user_input) > 100 else user_input}")
 
         # Format conversation history
         history_text = "\n".join([f"- {msg}" for msg in conversation_history[-5:]]) if conversation_history else "None"
@@ -92,6 +102,7 @@ Rules:
 """
 
         try:
+            logger.debug(f"PreQueryContext: Calling Groq for concept extraction")
             response = groq.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
@@ -103,7 +114,8 @@ Rules:
             import json
             context = json.loads(response.choices[0].message.content)
 
-            logger.info(f"Context analysis: intent={context.get('intent')}, concepts={len(context.get('related_concepts', []))}")
+            logger.info(f"Context analyzed: {len(context.get('related_concepts', []))} concepts found")
+            logger.debug(f"PreQueryContext: Intent={context.get('intent')}, Concepts={context.get('related_concepts')}, TimeScope={context.get('time_scope')}")
 
             return context
 
@@ -141,6 +153,8 @@ class ContextualQueryNode(AsyncNode):
     AsyncNode that queries Neo4j with context-aware parameters.
 
     Builds dynamic Cypher based on pre-query context.
+
+    Phase 4 Enhancement: Added Context logging.
     """
 
     async def prep_async(self, shared):
@@ -166,6 +180,8 @@ class ContextualQueryNode(AsyncNode):
         """
         Execute Neo4j query with context-aware filters.
 
+        Phase 4 Enhancement: Added debug logging.
+
         Args:
             inputs: Tuple of (driver, context, user_input)
 
@@ -175,6 +191,9 @@ class ContextualQueryNode(AsyncNode):
         from neo4j import AsyncGraphDatabase
 
         driver, context, user_input = inputs
+
+        # Phase 4: Debug logging
+        logger.debug("ContextualQuery: Building dynamic Cypher query")
 
         # Build base query
         query = """
@@ -219,7 +238,11 @@ class ContextualQueryNode(AsyncNode):
             LIMIT 20
         """
 
+        logger.debug(f"ContextualQuery: Query: {query[:150]}...")
+        logger.debug(f"ContextualQuery: Params: {params}")
+
         async with driver.session() as session:
+            logger.debug("ContextualQuery: Executing Neo4j query")
             result = await session.run(query, **params)
 
             bubbles = []
@@ -239,7 +262,10 @@ class ContextualQueryNode(AsyncNode):
                 })
                 all_relations.extend(record.get("relations", []))
 
-        logger.info(f"Contextual query: found {len(bubbles)} bubbles, {len(all_relations)} relations")
+        logger.info(f"Query complete: {len(bubbles)} bubbles retrieved")
+
+        if len(bubbles) == 0:
+            logger.warning("No memories found - check search terms and filters")
 
         return {"bubbles": bubbles, "relations": all_relations}
 
@@ -269,6 +295,8 @@ class PostQuerySynthesizeNode(AsyncNode):
 
     Uses OpenRouter (deep thinking ~2-5s) for synthesis.
     Groups results by theme, highlights key insights, identifies relationships.
+
+    Phase 4 Enhancement: Added Context logging.
     """
 
     async def prep_async(self, shared):
@@ -291,6 +319,8 @@ class PostQuerySynthesizeNode(AsyncNode):
         """
         Execute synthesis using OpenRouter LLM.
 
+        Phase 4 Enhancement: Added debug logging.
+
         Args:
             inputs: Tuple of (bubbles, relations, context)
 
@@ -299,7 +329,11 @@ class PostQuerySynthesizeNode(AsyncNode):
         """
         bubbles, relations, context = inputs
 
+        # Phase 4: Debug logging
+        logger.debug("PostQuerySynthesize: Starting synthesis")
+
         if not bubbles:
+            logger.debug("PostQuerySynthesize: No bubbles, returning early")
             return {
                 "summary": "No memories found",
                 "bubbles": [],
@@ -352,6 +386,7 @@ Return JSON only:
 """
 
         try:
+            logger.debug(f"PostQuerySynthesize: Calling OpenRouter {model} for synthesis")
             response = await client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],

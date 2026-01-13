@@ -1,6 +1,8 @@
 """
 Summarize Project Tool.
 MCP tool wrapper for the summarize_project PocketFlow.
+
+Phase 4 Enhancement: Added enhanced logging and progress tracking.
 """
 
 import logging
@@ -71,13 +73,23 @@ def register_summarize_project(mcp) -> None:
         - summarize_project(project="FastTrack", limit=10)
         """
         try:
+            # Phase 4: Enhanced logging
+            logger.debug(f"summarize_project: Starting for project '{project}'")
+            logger.info(f"Starting project summary: {project}")
+
             # Step 1: Retrieve memories related to the project
+            logger.debug(f"summarize_project: Retrieving memories (limit={limit})")
             memories = await search_bubbles(project, limit)
 
             if not memories:
+                logger.warning(f"No memories found for project '{project}'")
                 return f"No memories found for project '{project}'.\n\nTry using a different project name or add some memories first with create_memory."
 
+            # Progress: 30% - Memories retrieved
+            logger.info(f"Found {len(memories)} memories for {project}")
+
             # Step 2: Format memories for the flow
+            logger.debug("summarize_project: Formatting memories for PocketFlow")
             memories_text = "\n\n".join(
                 [
                     f"- [{m.sector}] {m.content}\n  (Created: {m.created_at.strftime('%Y-%m-%d')}, Salience: {m.salience:.2f})"
@@ -86,6 +98,7 @@ def register_summarize_project(mcp) -> None:
             )
 
             # Step 3: Run the PocketFlow
+            logger.debug("summarize_project: Calling PocketFlow for LLM synthesis")
             shared = {
                 "neo4j_driver": get_driver(),
                 "project_name": project,
@@ -95,6 +108,10 @@ def register_summarize_project(mcp) -> None:
             await summarize_project_flow.run_async(shared)
 
             summary = shared.get("summary", "No summary generated")
+
+            # Progress: 100% - Complete
+            logger.info("Summary formatting complete")
+            logger.debug(f"summarize_project: Complete - {len(memories)} memories processed")
 
             # Step 4: Format and return the result
             output = [

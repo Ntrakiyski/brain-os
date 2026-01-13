@@ -17,6 +17,8 @@ sys.path.insert(0, str(project_root))
 
 # Import tool registration functions
 from src.tools import register_memory_tools, register_agent_tools
+from src.tools.notifications import register_notification_tools
+from src.tools.monitoring import register_monitoring_tools
 
 # Create FastMCP instance with comprehensive instructions
 mcp = FastMCP(
@@ -123,6 +125,8 @@ async def health_check(request) -> JSONResponse:
 # Register all tool modules
 register_memory_tools(mcp)
 register_agent_tools(mcp)
+register_notification_tools(mcp)
+register_monitoring_tools(mcp)
 
 
 # =============================================================================

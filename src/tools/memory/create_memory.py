@@ -1,6 +1,8 @@
 """
 Memory creation tool.
 Stores new bubbles in the Synaptic Graph.
+
+Phase 4 Enhancement: Added enhanced logging.
 """
 
 import logging
@@ -80,6 +82,10 @@ def register_create_memory(mcp) -> None:
         - salience: 0.7
         """
         try:
+            # Phase 4: Enhanced logging
+            logger.debug(f"create_memory: Starting memory creation for sector '{sector}'")
+            logger.info(f"Creating {sector} memory (type: {memory_type}, salience: {salience})")
+
             # Validate and create the bubble
             bubble_data = BubbleCreate(
                 content=content,
@@ -92,6 +98,11 @@ def register_create_memory(mcp) -> None:
                 observations=observations,
             )
             result = await upsert_bubble(bubble_data)
+
+            logger.info(
+                f"Memory stored successfully: ID={result.id}, Sector={result.sector}, "
+                f"Salience={result.salience}, Type={memory_type}"
+            )
 
             return (
                 f"Memory stored successfully!\n"

@@ -1,6 +1,8 @@
 """
 Memory retrieval tools.
 Fetches bubbles from the Synaptic Graph.
+
+Phase 4 Enhancement: Added enhanced logging.
 """
 
 import logging
@@ -50,10 +52,16 @@ def register_get_memory(mcp) -> None:
         - Shows sector, salience, created date, source
         """
         try:
+            # Phase 4: Enhanced logging
+            logger.debug(f"get_memory: Searching for '{query}' (limit={limit})")
+
             results = await search_bubbles(query, limit)
 
             if not results:
+                logger.warning(f"No memories found matching query: '{query}'")
                 return f"No memories found matching query: '{query}'"
+
+            logger.info(f"Found {len(results)} memories matching '{query}'")
 
             output = [f"Found {len(results)} memories matching '{query}':\n"]
             for i, bubble in enumerate(results, 1):
@@ -109,10 +117,16 @@ def register_get_memory(mcp) -> None:
         If imbalanced, consider creating memories in underrepresented sectors.
         """
         try:
+            # Phase 4: Enhanced logging
+            logger.debug(f"get_all_memories: Retrieving all memories (limit={limit})")
+
             results = await get_all_bubbles(limit)
 
             if not results:
+                logger.warning("No memories stored yet")
                 return "No memories stored yet. Use create_memory to store your first memory."
+
+            logger.info(f"Retrieved {len(results)} memories")
 
             # Group by sector for summary
             sector_counts = {}

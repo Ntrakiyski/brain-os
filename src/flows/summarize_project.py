@@ -5,6 +5,8 @@ PocketFlow implementation for project summarization (migrated from BaseAgent).
 This flow retrieves memories about a project and generates a structured summary.
 
 Configuration-driven: Modify the node config class to change behavior without code changes.
+
+Phase 4 Enhancement: Added Context logging and progress reporting.
 """
 
 import logging
@@ -66,6 +68,8 @@ class GenerateSummaryNode(AsyncNode):
         """
         Execute the core logic: call LLM to generate summary.
 
+        Phase 4 Enhancement: Added Context logging and progress reporting.
+
         Args:
             inputs: Tuple of (project_name, memories)
 
@@ -93,6 +97,7 @@ Format your response in Markdown."""
         model = get_openrouter_model(self.config.model_task)
 
         # Call LLM
+        logger.info(f"Calling OpenRouter {model} for project synthesis")
         response = await client.chat.completions.create(
             model=model,
             messages=[

@@ -25,6 +25,14 @@ services:
       - OPENROUTER_CREATIVE_MODEL=${OPENROUTER_CREATIVE_MODEL:-anthropic/claude-sonnet-4}
       - OPENROUTER_PLANNING_MODEL=${OPENROUTER_PLANNING_MODEL:-anthropic/claude-opus-4}
 
+      # Email Webhook (N8N)
+      - EMAIL_WEBHOOK_URL=${EMAIL_WEBHOOK_URL}
+      - EMAIL_AUTHORIZATION=${EMAIL_AUTHORIZATION}
+
+      # Phoenix Cloud Observability (set in Coolify environment variables)
+      - PHOENIX_COLLECTOR_ENDPOINT=${PHOENIX_COLLECTOR_ENDPOINT}
+      - PHOENIX_API_KEY=${PHOENIX_API_KEY}
+
       - MCP_PORT=${MCP_PORT:-9131}
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

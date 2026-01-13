@@ -76,4 +76,82 @@ By implementing Brain OS, the human user stops being a data entry clerk for thei
 (This section will provide the API documentation for tools like create_bubble, create_cloud, and ask_creative_partner).
 
 ## 9. Installation and Setup
-(This section will guide users through configuring the MCP server within Claude Desktop or other environments).
+
+### Prerequisites
+- Python 3.14+
+- Neo4j (local or cloud)
+- Groq API key
+- OpenRouter API key
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/0brainos.git
+cd 0brainOS
+
+# Install dependencies
+uv sync
+
+# Start Neo4j
+docker compose up -d
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your API keys
+
+# Run the MCP server
+fastmcp run brainos_server.py:mcp
+```
+
+### Claude Desktop Integration
+
+```bash
+# Automatic configuration (recommended)
+fastmcp install claude-desktop brainos_server.py --project . --env-file .env
+
+# Restart Claude Desktop and look for the 🔨 icon
+```
+
+### Documentation
+- **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Complete overview of all 4 phases
+- **[Complete User Guide](docs/COMPLETE_USER_GUIDE.md)** - Comprehensive user documentation
+- **[CLAUDE.md](CLAUDE.md)** - Development guide for contributors
+
+---
+
+## Implementation Status
+
+**🎉 ALL PHASES COMPLETE (Phase 1-4)**
+
+### Phase 1: Foundation ✅
+- MCP server with 5 core tools
+- Neo4j integration with async connection pooling
+- Claude Desktop integration via FastMCP CLI
+- Docker deployment with HTTP transport
+
+### Phase 2: Scalability ✅
+- Modular folder structure
+- BaseAgent pattern with configuration-driven execution
+- `summarize_project` agent for AI-powered summaries
+- PocketFlow framework for workflow orchestration
+
+### Phase 3: Cognitive Operating System ✅
+- Instinctive Memory System (auto-activation)
+- Contextual Retrieval (3-agent system)
+- Entity-Observation Model
+- Relationship Visualization
+- Deletion Tools with safety confirmation
+
+### Phase 4: Observability & Maintenance ✅
+- Enhanced logging throughout all tools
+- Progress reporting for long-running operations
+- Background Tasks (circadian rhythm):
+  - Synaptic Pruning (daily)
+  - Cloud Synthesis (weekly)
+  - Health Check (hourly)
+- System Health Check tool
+- Task Status Query tool
+- Phoenix Cloud observability integration
+
+**Total Tools**: 16 MCP tools available
