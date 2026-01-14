@@ -385,15 +385,16 @@ async def delete_all_bubbles(
         cypher_get_names = """
         MATCH (b:Bubble)
         WHERE b.valid_to IS NULL
-        RETURN b.content, b.entities, b.sector
+        RETURN b
         """
         async with conn.session() as session:
             result = await session.run(cypher_get_names)
             async for record in result:
                 from src.utils.entity_naming import generate_entity_name
-                content = record["b.content"]
-                entities = record["b"].get("entities", [])
-                sector = record["b"]["sector"]
+                bubble = record["b"]
+                content = bubble.get("content", "")
+                entities = bubble.get("entities", [])
+                sector = bubble.get("sector", "Semantic")
                 entity_name = generate_entity_name(content, entities, sector)
                 entity_names.append(entity_name)
 
