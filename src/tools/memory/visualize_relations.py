@@ -18,7 +18,7 @@ def register_visualize_relations(mcp) -> None:
     @mcp.tool
     async def visualize_relations(
         bubble_id: str = Field(
-            description="Bubble ID to visualize. Accepts formats: '4' (numeric), '4:abc123...' (full element_id), or from get_all_memories output. Tool auto-extracts numeric ID."
+            description="Simple numeric Bubble ID (e.g., '4'). Get this from get_memory or get_all_memories results."
         ),
         depth: int = Field(
             default=2,
@@ -37,9 +37,9 @@ def register_visualize_relations(mcp) -> None:
         **Use this to understand knowledge clusters and explore relationships.**
 
         Finding Bubble IDs:
-        - Run get_all_memories() and look for "ID: 4:abc123..."
-        - Use just the number: "4"
-        - From get_memory() results
+        - Run get_all_memories() - IDs are simple numbers like "4"
+        - Run get_memory(query="your search") - IDs shown in results
+        - Just use the numeric ID shown in the output
 
         Relationship Types:
         - **explains**: Rationale or justification
@@ -63,7 +63,7 @@ def register_visualize_relations(mcp) -> None:
         - **neo4j**: Cypher query for Neo4j Browser at http://localhost:7474
 
         Example Usage:
-        1. get_all_memories(limit=10) → Find ID: "4:abc123..."
+        1. get_all_memories(limit=10) → Find ID: "4"
         2. visualize_relations(bubble_id="4", depth=2) → See connections
         3. visualize_relations(bubble_id="4", format="neo4j") → Explore interactively
         """
@@ -78,14 +78,13 @@ def register_visualize_relations(mcp) -> None:
 
 Invalid bubble ID format: '{bubble_id}'
 
-**Expected formats:**
-- Simple numeric: "4"
-- Full element_id: "4:a6501d47-1704-4066-b4c0-de0595f56a0f:14"
+**Expected format:**
+- Simple numeric ID like "4" or "123"
 
 **To find bubble IDs**:
 - Use get_memory to search for memories
 - Use get_all_memories to see all memories
-- Look for the numeric ID at the start of the element_id
+- Look for the simple numeric ID shown in the results
 """
 
             driver = await get_driver()
@@ -117,7 +116,8 @@ This will show an interactive graph with all connected memories.
                 query = """
                     MATCH (center:Bubble)
                     WHERE id(center) = $bubble_id
-                    MATCH (center)-[r:LINKED]->(related:Bubble)
+                    AND center.valid_to IS NULL
+                    OPTIONAL MATCH (center)-[r:LINKED]->(related:Bubble)
                     WHERE related.valid_to IS NULL
                     RETURN center,
                            collect(DISTINCT {
@@ -138,13 +138,48 @@ No bubble found with ID: {bubble_id_numeric}
 **To find bubble IDs**:
 - Use get_memory to search for memories
 - Use get_all_memories to see all memories
-- Look for the numeric ID at the start of the element_id
+- Look for the simple numeric ID shown in the results
 """
                     center = dict(record["center"])
                     connections = record["connections"]
 
-                    # Build Mermaid diagram
-                    mermaid = "graph LR\n"
+                    # Filter out null entries (when no relationships exist)
+                    connections = [c for c in connections if c.get("bubble") is not None]
+
+                    # If no relationships exist, show a helpful message
+                    if not connections:
+                        return f"""## Memory Relationships: No Connections Found
+
+**Bubble ID**: {bubble_id}
+**Content**: {center.get('content', '')[:100]}...
+**Depth**: {depth} hops
+
+### No Relationships Found
+
+This memory has no explicit connections to other memories yet.
+
+**What this means:**
+- Relationships are created explicitly between related memories
+- Use `get_memory_relations` to find related content by context
+- This memory exists but isn't linked to others via explicit relationships
+
+### To Explore Related Content:
+
+Try these tools instead:
+- **get_memory_relations(query="related topic")** - Finds related memories by content
+- **get_memory(query="keyword")** - Search for specific keywords
+- **get_all_memories()** - Browse all memories
+
+### Neo4j Browser Query
+
+To manually explore in Neo4j Browser (http://localhost:7474):
+
+```cypher
+MATCH (b:Bubble)
+WHERE id(b) = {bubble_id}
+RETURN b
+```
+"""
 
                     # Center node
                     center_content = center.get("content", "")[:30]
@@ -181,7 +216,7 @@ For interactive exploration, copy this into Neo4j Browser:
 
 ```cypher
 MATCH path = (b:Bubble) -[*1..{depth}] - (related:Bubble)
-WHERE element_id(b) = {bubble_id}
+WHERE id(b) = {bubble_id}
 AND b.valid_to IS NULL
 AND related.valid_to IS NULL
 RETURN path

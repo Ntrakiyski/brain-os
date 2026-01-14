@@ -3,6 +3,7 @@ Memory tools module.
 Contains all memory-related MCP tools organized by function.
 
 Phase 3 Enhanced: Includes instinctive memory activation and contextual retrieval.
+Phase 6: AI-powered memory Q&A with reasoning and confidence.
 """
 
 from src.tools.memory.create_memory import register_create_memory
@@ -14,6 +15,9 @@ from src.tools.memory.visualize_memories import register_visualize_memory
 from src.tools.memory.instinctive_memory import register_instinctive_memory
 from src.tools.memory.get_relations import register_get_memory_relations
 from src.tools.memory.visualize_relations import register_visualize_relations
+
+# Phase 6: AI-powered Q&A
+from src.tools.memory.query_memories import register_query_memories
 
 # Deletion tools
 from src.tools.memory.delete_memory import register_delete_memory
@@ -39,6 +43,9 @@ def register_memory_tools(mcp) -> None:
     register_instinctive_memory(mcp)
     register_get_memory_relations(mcp)
     register_visualize_relations(mcp)
+
+    # Phase 6: AI-powered Q&A
+    register_query_memories(mcp)
 
     # Deletion tools
     register_delete_memory(mcp)

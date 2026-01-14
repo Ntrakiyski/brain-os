@@ -108,7 +108,7 @@ Details: {result.get('details', 'No details')}
 Please check your webhook URL and try again."""
 
     @mcp.tool
-    async def send_templated_email(
+    async def send_templated_email_tool(
         template: str = Field(description=f"Template name: {', '.join(EMAIL_TEMPLATES.keys())}"),
         variables: str = Field(description="JSON string of template variables"),
         webhook_url: str = Field(default="", description="Your webhook URL (set via EMAIL_WEBHOOK_URL env var)"),
@@ -136,7 +136,7 @@ Please check your webhook URL and try again."""
 
         **Example:**
         ```
-        send_templated_email(
+        send_templated_email_tool(
             webhook_url="https://hook.eu.make.com/abc123",
             template="cloud_insight",
             variables='{"insight_content": "Project shows scope creep pattern", "related_count": 5, "salience": 0.8}'
@@ -304,7 +304,7 @@ Troubleshooting:
 
         lines.append("**Usage:**")
         lines.append("```")
-        lines.append('send_templated_email(')
+        lines.append('send_templated_email_tool(')
         lines.append('    webhook_url="https://hook.eu.make.com/abc123",')
         lines.append('    template="weekly_summary",')
         lines.append('    variables=\'{"total_memories": 147, "new_memories": 12}\'')

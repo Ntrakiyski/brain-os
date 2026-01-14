@@ -75,6 +75,7 @@ mcp = FastMCP(
     - `get_all_memories`: Get complete overview with statistics (good for starting work)
     - `get_instinctive_memory`: Context switching, starting work on a project
     - `get_memory_relations`: Deep contextual queries requiring synthesis
+    - `query_memories_tool`: AI-powered Q&A with direct answers and confidence scores
     - `summarize_project`: Project overview after returning from a break
 
     **Analysis and Visualization:**
@@ -194,6 +195,9 @@ async def tool_reference_resource() -> str:
 - **get_memory_relations**: Deep contextual retrieval with synthesis
 - **visualize_relations**: Explore connections between memories
 
+## AI-Powered Q&A (Phase 6)
+- **query_memories_tool**: Natural language questions with answers, reasoning, and confidence
+
 ## Analysis
 - **list_sectors**: Cognitive sector distribution
 - **visualize_memories**: Visual representation of memory patterns
@@ -210,6 +214,7 @@ async def tool_reference_resource() -> str:
 |------|-----|
 | Store info | create_memory |
 | Quick lookup | get_memory |
+| Direct Q&A | query_memories_tool |
 | Start work | get_instinctive_memory |
 | Deep understanding | get_memory_relations |
 | Project overview | summarize_project |
@@ -560,6 +565,9 @@ if __name__ == "__main__":
     logger.info("  - get_instinctive_memory: Auto-activate memories based on context")
     logger.info("  - get_memory_relations: Deep retrieval with contextual understanding")
     logger.info("  - visualize_relations: Visualize relationships between memories")
+    logger.info("")
+    logger.info("Phase 6: AI-Powered Q&A:")
+    logger.info("  - query_memories_tool: Natural language questions with answers and confidence")
     logger.info("")
     logger.info("Deletion Tools:")
     logger.info("  - delete_memory: Delete a specific memory by ID")

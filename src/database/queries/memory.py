@@ -56,7 +56,7 @@ async def upsert_bubble(data: BubbleCreate) -> BubbleResponse:
         b.accessed_at = $now,
         b.access_count = coalesce(b.access_count, 0) + 1,
         b.last_accessed = $now
-    RETURN b
+    RETURN b, id(b) as internal_id
     """
 
     async with conn.session() as session:
@@ -75,9 +75,10 @@ async def upsert_bubble(data: BubbleCreate) -> BubbleResponse:
         record = await result.single()
         if record:
             node = record["b"]
+            internal_id = record["internal_id"]
             logger.info(f"Stored bubble (type={data.memory_type}): {data.content[:50]}...")
             return BubbleResponse(
-                id=node.element_id,
+                id=str(internal_id),  # Use simple numeric ID
                 content=node["content"],
                 sector=node["sector"],
                 source=node["source"],
@@ -124,7 +125,7 @@ async def search_bubbles(query: str, limit: int = 10, memory_type: Optional[str]
     cypher = f"""
     MATCH (b:Bubble)
     WHERE {where_clause}
-    RETURN b
+    RETURN b, id(b) as internal_id
     ORDER BY b.created_at DESC
     LIMIT $result_limit
     """
@@ -141,8 +142,9 @@ async def search_bubbles(query: str, limit: int = 10, memory_type: Optional[str]
         bubbles = []
         async for record in result:
             node = record["b"]
+            internal_id = record["internal_id"]
             bubbles.append(BubbleResponse(
-                id=node.element_id,
+                id=str(internal_id),  # Use simple numeric ID
                 content=node["content"],
                 sector=node["sector"],
                 source=node["source"],
@@ -166,22 +168,29 @@ async def get_bubble_by_id(bubble_id: str) -> Optional[BubbleResponse]:
 
     Phase 3 Enhanced: Returns all fields including memory_type and activation_threshold.
     """
+    import re
     conn = await get_connection()
+
+    # Extract numeric ID from various formats
+    match = re.search(r'\d+', str(bubble_id))
+    if not match:
+        return None
+    numeric_id = int(match.group())
 
     cypher = """
     MATCH (b:Bubble)
-    WHERE element_id(b) = $bubble_id
+    WHERE id(b) = $bubble_id
     AND b.valid_to IS NULL
     RETURN b
     """
 
     async with conn.session() as session:
-        result = await session.run(cypher, bubble_id=bubble_id)
+        result = await session.run(cypher, bubble_id=numeric_id)
         record = await result.single()
         if record:
             node = record["b"]
             return BubbleResponse(
-                id=node.element_id,
+                id=str(numeric_id),  # Use simple numeric ID
                 content=node["content"],
                 sector=node["sector"],
                 source=node["source"],
@@ -212,7 +221,7 @@ async def get_all_bubbles(limit: int = 100) -> list[BubbleResponse]:
     cypher = """
     MATCH (b:Bubble)
     WHERE b.valid_to IS NULL
-    RETURN b
+    RETURN b, id(b) as internal_id
     ORDER BY b.created_at DESC
     LIMIT $result_limit
     """
@@ -222,8 +231,9 @@ async def get_all_bubbles(limit: int = 100) -> list[BubbleResponse]:
         bubbles = []
         async for record in result:
             node = record["b"]
+            internal_id = record["internal_id"]
             bubbles.append(BubbleResponse(
-                id=node.element_id,
+                id=str(internal_id),  # Use simple numeric ID
                 content=node["content"],
                 sector=node["sector"],
                 source=node["source"],
@@ -274,7 +284,7 @@ async def search_instinctive_bubbles(concepts: list[str], salience_threshold: fl
     AND b.activation_threshold < $salience_threshold
     AND b.valid_to IS NULL
     AND ({concept_conditions})
-    RETURN b
+    RETURN b, id(b) as internal_id
     ORDER BY b.salience DESC
     LIMIT $result_limit
     """
@@ -288,8 +298,9 @@ async def search_instinctive_bubbles(concepts: list[str], salience_threshold: fl
         bubbles = []
         async for record in result:
             node = record["b"]
+            internal_id = record["internal_id"]
             bubbles.append(BubbleResponse(
-                id=node.element_id,
+                id=str(internal_id),  # Use simple numeric ID
                 content=node["content"],
                 sector=node["sector"],
                 source=node["source"],
@@ -324,30 +335,43 @@ async def delete_bubble(bubble_id: str) -> bool:
     conn = await get_connection()
     now = datetime.now(timezone.utc)
 
+    # Extract numeric ID from various formats (e.g., "4:uuid:0", "5", etc.)
+    import re
+    match = re.search(r'\d+', str(bubble_id))
+    if not match:
+        logger.warning(f"Invalid bubble ID format: {bubble_id}")
+        return False
+    numeric_id = int(match.group())
+
     cypher = """
     MATCH (b:Bubble)
-    WHERE element_id(b) = $bubble_id
+    WHERE id(b) = $bubble_id
     AND b.valid_to IS NULL
     SET b.valid_to = $now
     RETURN b.content as content
     """
 
     async with conn.session() as session:
-        result = await session.run(cypher, bubble_id=bubble_id, now=now.isoformat())
+        result = await session.run(cypher, bubble_id=numeric_id, now=now.isoformat())
         record = await result.single()
         if record:
             logger.info(f"Deleted bubble {bubble_id}: {record['content'][:50]}...")
             return True
-        logger.warning(f"Bubble {bubble_id} not found for deletion")
+        logger.warning(f"Bubble {bubble_id} (numeric: {numeric_id}) not found for deletion")
         return False
 
 
-async def delete_all_bubbles() -> int:
+async def delete_all_bubbles(
+    cleanup_obsidian: bool = False
+) -> int:
     """
     Delete all active bubbles from the database.
 
     Uses soft deletion by setting valid_to timestamp on all bubbles.
     This preserves audit trail and maintains temporal evolution tracking.
+
+    Args:
+        cleanup_obsidian: If True, also delete corresponding Obsidian .md files
 
     Returns:
         Number of bubbles deleted
@@ -355,6 +379,25 @@ async def delete_all_bubbles() -> int:
     conn = await get_connection()
     now = datetime.now(timezone.utc)
 
+    # First, get all entity names before deletion (for Obsidian cleanup)
+    entity_names = []
+    if cleanup_obsidian:
+        cypher_get_names = """
+        MATCH (b:Bubble)
+        WHERE b.valid_to IS NULL
+        RETURN b.content, b.entities, b.sector
+        """
+        async with conn.session() as session:
+            result = await session.run(cypher_get_names)
+            async for record in result:
+                from src.utils.entity_naming import generate_entity_name
+                content = record["b.content"]
+                entities = record["b"].get("entities", [])
+                sector = record["b"]["sector"]
+                entity_name = generate_entity_name(content, entities, sector)
+                entity_names.append(entity_name)
+
+    # Now perform the soft deletion
     cypher = """
     MATCH (b:Bubble)
     WHERE b.valid_to IS NULL
@@ -367,7 +410,17 @@ async def delete_all_bubbles() -> int:
         record = await result.single()
         count = record["deleted_count"] if record else 0
         logger.info(f"Deleted all {count} bubbles")
-        return count
+
+    # Cleanup Obsidian if requested
+    if entity_names and cleanup_obsidian:
+        try:
+            from src.utils.obsidian_client import cleanup_obsidian_entities
+            await cleanup_obsidian_entities(entity_names, archive=False)
+            logger.info(f"Cleaned up {len(entity_names)} Obsidian entities")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup Obsidian entities: {e}")
+
+    return count
 
 
 async def get_bubble_count(sector: Optional[str] = None) -> int:

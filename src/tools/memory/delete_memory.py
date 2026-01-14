@@ -18,7 +18,7 @@ def register_delete_memory(mcp) -> None:
     @mcp.tool
     async def delete_memory(
         bubble_id: str = Field(
-            description="Bubble ID to delete. Accepts formats: '4' (numeric), '4:abc123...' (full element_id), or from get_all_memories output. Tool auto-extracts numeric ID."
+            description="Simple numeric Bubble ID (e.g., '4'). Get this from get_memory or get_all_memories results."
         ),
         confirm: bool = Field(
             default=False,
@@ -31,9 +31,9 @@ def register_delete_memory(mcp) -> None:
         **DANGER**: This is a destructive operation. Use with caution.
 
         Finding Bubble IDs:
-        - Run get_all_memories() and look for "ID: 4:abc123..."
-        - Use get_memory() to search, then note the ID
-        - Use just the number: "4"
+        - Run get_all_memories() - IDs are simple numbers like "4"
+        - Run get_memory(query="your search") - IDs shown in results
+        - Just use the numeric ID shown in the output
 
         Soft Deletion:
         This uses soft deletion (sets valid_to timestamp) which:
@@ -53,7 +53,7 @@ def register_delete_memory(mcp) -> None:
         ✗ Bulk cleanup (use delete_all_memories with confirmation)
 
         Example Usage:
-        1. get_all_memories(limit=10) → Find ID: "4:abc123..."
+        1. get_all_memories(limit=10) → Find ID: "4"
         2. delete_memory(bubble_id="4", confirm=True) → Delete memory 4
 
         Returns:
@@ -75,7 +75,7 @@ This extra step ensures you really want to delete this memory.
 **To find bubble IDs**:
 - Use get_all_memories() to see all memories
 - Use get_memory(query="...") to search
-- Look for "ID: 4:abc123..." in results
+- Look for the simple numeric ID shown in results
 """
 
         try:
@@ -88,14 +88,13 @@ This extra step ensures you really want to delete this memory.
 
 Invalid bubble ID format: '{bubble_id}'
 
-**Expected formats:**
-- Simple numeric: "4"
-- Full element_id: "4:a6501d47-1704-4066-b4c0-de0595f56a0f:14"
+**Expected format:**
+- Simple numeric ID like "4" or "123"
 
 **To find bubble IDs**:
 - Use get_memory to search for memories
 - Use get_all_memories to see all memories
-- Look for the numeric ID at the start of the element_id
+- Look for the simple numeric ID shown in the results
 """
 
             # First, retrieve the bubble to show what will be deleted
@@ -138,8 +137,9 @@ Audit trail is preserved in the database.
 
     @mcp.tool
     async def delete_all_memories(
-        confirm: str = Field(
-            description="Type 'DELETE_ALL' exactly to confirm. This prevents accidental mass deletion."
+        cleanup_obsidian: bool = Field(
+            default=False,
+            description="If True, also delete corresponding Obsidian .md files"
         ),
     ) -> str:
         """
@@ -147,60 +147,19 @@ Audit trail is preserved in the database.
 
         **DANGER**: This is a destructive operation that affects ALL memories.
 
-        ⚠️ **WARNING**: This will delete every single memory in the system.
-        This action cannot be easily undone.
-
         Soft Deletion:
         This uses soft deletion (sets valid_to timestamp) which:
         - Preserves audit trail
         - Maintains temporal evolution tracking
         - Allows for potential recovery (with database access)
 
-        When to Use This:
-        ✓ Starting fresh with a new cognitive state
-        ✓ Testing/development cleanup
-        ✓ Major system reset
-
-        When NOT to Use This:
-        ✗ Just want to clean up old memories (consider selective deletion)
-        ✗ Want to archive (export first)
-        ✗ Uncertain about losing data (BACKUP FIRST)
-
-        Confirmation Required:
-        You must type 'DELETE_ALL' exactly as the confirm parameter.
-        This prevents accidental mass deletion.
-
-        Before Running This:
-        1. Consider: Do I really need to delete everything?
-        2. Export: Use get_all_memories() to review what will be lost
-        3. Backup: Critical data should be exported before deletion
-        4. Confirm: Type 'DELETE_ALL' as the confirm parameter
+        Obsidian Integration:
+        - cleanup_obsidian: If True, also deletes corresponding .md files from Obsidian vault
 
         Returns:
         - Success: Number of memories deleted
-        - Error: Confirmation message or failure details
+        - Error: Failure details
         """
-        if confirm != "DELETE_ALL":
-            return """⚠️ **Mass Deletion Not Confirmed**
-
-To prevent accidental deletion of ALL memories, you must confirm by typing exactly 'DELETE_ALL':
-
-```python
-delete_all_memories(confirm="DELETE_ALL")
-```
-
-**This will delete EVERY memory in the system.**
-
-Before proceeding:
-1. Review your memories: `get_all_memories(limit=100)`
-2. Consider selective deletion: `delete_memory(bubble_id="...", confirm=True)`
-3. Export important data if needed
-4. Only proceed if you're certain
-
-**Are you sure you want to delete ALL memories?**
-If yes, run: `delete_all_memories(confirm="DELETE_ALL")`
-"""
-
         try:
             # First, get count of memories to be deleted
             from src.database.queries.memory import get_all_bubbles
@@ -216,11 +175,23 @@ Nothing to delete.
 """
 
             # Perform the deletion
-            deleted_count = await delete_all_bubbles()
+            deleted_count = await delete_all_bubbles(
+                cleanup_obsidian=cleanup_obsidian
+            )
+
+            obsidian_message = ""
+            if cleanup_obsidian:
+                obsidian_message = f"""
+**Obsidian**: All corresponding .md files deleted
+"""
+            else:
+                obsidian_message = """
+**Obsidian**: .md files NOT deleted (set cleanup_obsidian=True to delete)
+"""
 
             return f"""## All Memories Deleted Successfully
 
-**Deleted**: {deleted_count} memories
+**Deleted**: {deleted_count} memories{obsidian_message}
 
 The Synaptic Graph has been cleared.
 All memories have been soft-deleted (valid_to timestamp set).

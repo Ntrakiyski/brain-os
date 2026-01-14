@@ -13,9 +13,9 @@ This document summarizes the 3-phase approach to integrating Obsidian with Brain
 |-------|------|--------------|--------|--------|
 | **Phase 1** | Neo4j → Obsidian sync on memory creation | 8 stories | 13 hours | ⏳ Awaiting Approval |
 | **Phase 2** | Bidirectional sync (cron every 15min) + bulk export | 8 stories | 22 hours | ⏳ Awaiting Approval |
-| **Phase 3** | Voice memo processing with AI agents | 7 stories | 26 hours | ⏳ Awaiting Approval |
+| **Phase 3** | Scheduled recurring updates (morning/evening/weekly) | 7 stories | 23 hours | ⏳ Awaiting Approval |
 
-**Total Effort**: ~61 hours (5-8 days of focused development)
+**Total Effort**: ~58 hours (5-7 days of focused development)
 
 ---
 
@@ -87,35 +87,36 @@ This document summarizes the 3-phase approach to integrating Obsidian with Brain
 
 ---
 
-## Phase 3: Voice Memo Processing + Advanced Workflows
+## Phase 3: Scheduled Recurring Updates
 
-**Goal**: 15-minute voice memo → 3-5 memories created automatically
+**Goal**: Automated daily and weekly updates sent to Obsidian at configurable times
 
 ### Key Features
-- ✅ Process pre-transcribed text (Claude handles transcription via MCP)
-- ✅ AI entity extraction (Groq)
-- ✅ Content segmentation by sector (Groq)
-- ✅ Observation generation (OpenRouter)
-- ✅ Multi-memory creation in Neo4j + Obsidian
-- ✅ Daily note updates
-- ✅ Weekly review with Obsidian insights
+- ✅ Morning Briefing (configurable time, default 7:00 AM)
+- ✅ Evening Recap (configurable time, default 7:00 PM)
+- ✅ Sunday Weekly Review (configurable time, default 7:00 AM, skips Saturday)
+- ✅ Cron-style scheduling system
+- ✅ All times configurable via environment variables
+- ✅ Content synthesis using OpenRouter
+- ✅ Graceful handling if Obsidian unavailable
 
 ### User Stories
-1. Extract Entities from Transcript
-2. Segment Transcript into Multiple Memories
-3. Generate Observations for Each Segment
-4. Process Voice Memo Tool (End-to-End)
-5. Update Daily Note with Voice Memo Summary
-6. Create Daily Note Template
-7. Weekly Review with Obsidian Data
+1. Morning Briefing Update (yesterday's recap, today's focus, active projects)
+2. Evening Recap Update (today's memories, key insights, tomorrow's priorities)
+3. Sunday Weekly Review (weekly summary, key themes, sector analysis, decisions made)
+4. Scheduled Background Task System (cron scheduling, overlap prevention)
+5. Update Content Synthesis (context-aware generation for each update type)
+6. Obsidian Note Creation (daily/weekly note management)
+7. Configuration & Environment Variables (all times configurable)
 
 ### Success Criteria
-- 15-minute transcript → 3-5 memories in < 60 seconds
-- Daily note updated with voice memo summary
-- Entity relationships visible in graph view
-- Weekly review includes Neo4j + Obsidian data
+- Morning briefing runs automatically at scheduled time
+- Evening recap runs automatically at scheduled time
+- Sunday weekly review runs (skips Saturday)
+- All updates appear in Obsidian with relevant content
+- Times configurable via environment variables
 
-**Timeline**: 3-4 days
+**Timeline**: 2-3 days
 
 **Full Document**: [phase3_user_stories.md](./phase3_user_stories.md)
 
@@ -253,17 +254,17 @@ OBSIDIAN_SYNC_INTERVAL_MINUTES=15
 **Technical**:
 - ✅ 100+ memories exported to Obsidian
 - ✅ Bidirectional sync works (edit Obsidian → Neo4j updates)
-- ✅ Voice memo processing < 60 seconds
+- ✅ Scheduled updates run reliably (morning/evening/weekly)
 - ✅ Graph view with 50+ entities + relationships
-- ✅ Daily notes auto-updated
+- ✅ Daily notes auto-created and updated
 - ✅ Zero data loss (Neo4j ↔ Obsidian consistency)
 
 **User Experience**:
 - ✅ User creates memory → sees in Obsidian instantly
 - ✅ User edits Obsidian → Neo4j syncs in 15 minutes
-- ✅ User processes voice memo → 3-5 memories created
-- ✅ User explores graph view → understands relationships
-- ✅ User runs weekly review → gets comprehensive synthesis
+- ✅ User receives morning briefing → starts day with context
+- ✅ User receives evening recap → ends day with summary
+- ✅ User receives weekly review → plans next week
 - ✅ User confirms: "This is exactly what I needed"
 
 ---
@@ -304,8 +305,8 @@ OBSIDIAN_SYNC_INTERVAL_MINUTES=15
 - You approve completion → Move to Phase 3
 
 ### Step 5: Phase 3 Implementation
-- I implement voice memo processing
-- You test with 15-minute transcribed voice memo
+- I implement scheduled recurring updates
+- You test with morning/evening/weekly updates for 1 week
 - You approve completion → **DONE!** 🎉
 
 ---
@@ -322,6 +323,8 @@ Before proceeding, please answer:
 
 4. **Cron interval?** 15 minutes OK, or prefer different frequency?
 
+5. **Scheduled update times?** Morning 7am, Evening 7pm, Sunday 7am OK?
+
 ---
 
 ## Next Steps
@@ -330,12 +333,12 @@ Before proceeding, please answer:
 - [ ] User reviews 3 phase documents
 - [ ] User approves Phase 1 (or requests changes)
 - [ ] User confirms Obsidian vault location
-- [ ] User confirms OpenAI API key availability (Phase 3)
+- [ ] User confirms scheduled update times (Phase 3)
 - [ ] I proceed with Phase 1 implementation
 
 ---
 
-**Total Estimated Timeline**: 5-8 days for all 3 phases
+**Total Estimated Timeline**: 5-7 days for all 3 phases
 **Current Status**: ⏳ Design Complete - Awaiting Approval
 **Next Action**: User reviews and approves Phase 1
 

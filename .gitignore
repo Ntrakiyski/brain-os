@@ -11,8 +11,10 @@ build/
 dist/
 wheels/
 *.egg-info
-
-docs
+htmlcov/
+.pytest_cache/
+.coverage
+*.cover
 
 # Virtual environments
 .venv
@@ -35,3 +37,14 @@ Thumbs.db
 *.db
 neo4j/
 nul
+
+# Temporary files
+tmpclaude-*
+*.tmp
+
+# Local override files
+docker-compose.local.yml
+*.local.yml
+
+# Package manager
+uv.lock
