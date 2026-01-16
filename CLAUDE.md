@@ -13,10 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Salience Scoring**: Adaptive memory with decay and reinforcement (0.0 to 1.0)
 
 ### Technical Stack
-- **Runtime**: Python 3.14+ with `uv` package manager
+- **Runtime**: Python 3.12+ with `uv` package manager (Phoenix requires <3.14)
 - **MCP Framework**: FastMCP 2.x for tools, background tasks, and remote proxy mounting
 - **Agent Framework**: PocketFlow (100-line minimalist framework) for workflow orchestration
 - **Database**: Neo4j Community Edition for the Synaptic Graph
+- **Observability**: Phoenix Cloud (Arize) for real-time tracing and monitoring
 - **Intelligence**: Dual-LLM architecture
   - **Groq**: Fast actions (classification, extraction, routing) - speed and cost efficiency
   - **OpenRouter**: Deep thinking (research, synthesis, complex reasoning) - quality and intelligence
@@ -26,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Setup
 ```bash
 # Add dependencies
-uv add fastmcp pocketflow neo4j python-dotenv pydantic groq
+uv add fastmcp pocketflow neo4j python-dotenv pydantic groq openai arize-phoenix-otel httpx
 
 # Verify FastMCP installation
 fastmcp version
@@ -169,6 +170,13 @@ OPENROUTER_RESEARCHING_MODEL=anthropic/claude-sonnet-4
 OPENROUTER_THINKINIG_MODEL=anthropic/claude-sonnet-4
 OPENROUTER_CREATIVE_MODEL=anthropic/claude-sonnet-4
 OPENROUTER_PLANNING_MODEL=anthropic/claude-opus-4
+
+# Phoenix Cloud Observability (OPTIONAL)
+# Get free account at: https://phoenix.arize.com/
+# Benefits: Real-time tracing, performance monitoring, interactive debugging
+# Format: Your Phoenix Cloud project URL (e.g., https://app.phoenix.arize.com/s/your-space-id)
+PHOENIX_COLLECTOR_ENDPOINT=https://app.phoenix.arize.com/s/your-space-id
+PHOENIX_API_KEY=<your-phoenix-api-key>
 
 # MCP Server (optional)
 MCP_PORT=9131
@@ -734,6 +742,81 @@ memory_workflow = create >> (update - "needs_synthesis" >> synthesize)
 **Chaining Syntax:**
 - `node1 >> node2`: Sequential (run node1, then node2)
 - `node1 - "action_name" >> node2`: Conditional (if node1 returns "action_name", go to node2)
+
+## Phoenix Cloud Observability
+
+Brain OS includes real-time observability through Phoenix Cloud (Arize) integration for tracking tool usage, performance, and debugging.
+
+### Setup
+
+Phoenix Cloud is configured via environment variables:
+```env
+PHOENIX_COLLECTOR_ENDPOINT=https://app.phoenix.arize.com/s/your-space-id
+PHOENIX_API_KEY=your-api-key
+```
+
+Get your free account at: https://phoenix.arize.com/
+
+### What Gets Traced
+
+When enabled, all MCP tool calls are automatically traced with:
+- **Input Parameters**: All function parameters (content, sector, salience, entities, observations)
+- **Output Results**: Tool return values (memory ID, timestamps, success status)
+- **Performance Metrics**: Execution time, latency measurements
+- **Error Tracking**: Exception details and stack traces
+
+### Implementation
+
+Tracing is implemented using the `@instrument_mcp_tool` decorator in `src/utils/observability.py`:
+
+```python
+from src.utils.observability import instrument_mcp_tool
+
+@mcp.tool
+@instrument_mcp_tool("create_memory")
+async def create_memory(...) -> str:
+    # Tool logic
+    # Automatically traced: inputs, outputs, performance, errors
+```
+
+### Phoenix Dashboard
+
+View traces in real-time at your Phoenix Cloud dashboard:
+- **Traces**: Individual tool executions with full context
+- **Spans**: Hierarchical view of operations
+- **Attributes**: Input/output parameters, performance metrics
+- **Errors**: Exception details with full stack traces
+
+### Data Captured
+
+Example trace data for `create_memory`:
+```json
+{
+  "mcp": {"tool": "create_memory", "success": true},
+  "input": {
+    "content": "Deploy the application using docker compose",
+    "sector": "Procedural",
+    "salience": 0.7,
+    "memory_type": "instinctive",
+    "entities_count": 2,
+    "entities_items": "[\"docker\", \"compose\"]"
+  },
+  "output": {
+    "result": "Memory stored successfully! - Neo4j ID: 67..."
+  }
+}
+```
+
+### Safety Limits
+
+- Strings: 1000 chars (input), 2000 chars (output)
+- Lists: First 10 items shown
+- Large data is truncated with `_truncated: true` flag
+
+### Key Files
+
+- `src/utils/observability.py`: Phoenix tracing setup and decorators
+- `src/tools/memory/create_memory.py`: Example tool with tracing
 
 ## Troubleshooting
 
