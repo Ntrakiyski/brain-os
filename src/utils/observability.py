@@ -5,6 +5,7 @@ OpenTelemetry-based tracing for MCP tools and background tasks.
 Provides real-time visibility into tool usage, performance, and errors.
 """
 
+import functools
 import logging
 import os
 from typing import Optional
@@ -176,6 +177,7 @@ def instrument_mcp_tool(tool_name: str):
         if not PHOENIX_AVAILABLE:
             return func
 
+        @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             tracer = get_tracer(tool_name)
 
