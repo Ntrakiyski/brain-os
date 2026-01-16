@@ -10,6 +10,7 @@ from pydantic import Field
 
 from src.database.queries.memory import upsert_bubble
 from src.utils.schemas import BubbleCreate
+from src.utils.observability import instrument_mcp_tool
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ def register_create_memory(mcp) -> None:
     """Register the create_memory tool with FastMCP."""
 
     @mcp.tool
+    @instrument_mcp_tool("create_memory")
     async def create_memory(
         content: str = Field(
             description="What to remember. Include WHY, not just WHAT (e.g., 'Chose PostgreSQL over MongoDB for ACID compliance' not just 'Use PostgreSQL')"

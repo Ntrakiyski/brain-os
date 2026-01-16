@@ -20,6 +20,9 @@ from src.tools import register_memory_tools, register_agent_tools
 from src.tools.notifications import register_notification_tools
 from src.tools.monitoring import register_monitoring_tools
 
+# Import observability to trigger Phoenix setup (auto-initializes on import)
+from src.utils import observability
+
 # Create FastMCP instance with comprehensive instructions
 mcp = FastMCP(
     "Brain OS",
