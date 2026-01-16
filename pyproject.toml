@@ -3,7 +3,7 @@ name = "0brainos"
 version = "0.1.0"
 description = "Cognitive Operating System for Personal and Professional Intelligence"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "fastmcp>=2.14.2",
     "neo4j>=5.25.0",

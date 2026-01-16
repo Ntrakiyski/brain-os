@@ -1,7 +1,7 @@
 # BrainOS MCP Server - Optimized for HTTPS/Proxy (Coolify compatible)
 # Based on chrome-mcp pattern that works with HTTPS termination
 
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
