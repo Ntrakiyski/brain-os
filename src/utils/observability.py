@@ -192,18 +192,28 @@ def instrument_mcp_tool(tool_name: str):
                 span.set_attribute("mcp.tool", tool_name)
 
                 try:
-                    # Extract key parameters
-                    if "content" in kwargs:
-                        span.set_attribute("params.content_length", len(kwargs["content"]))
-                    if "sector" in kwargs:
-                        span.set_attribute("params.sector", kwargs["sector"])
-                    if "query" in kwargs:
-                        span.set_attribute("params.query", kwargs["query"])
+                    # Capture all input parameters with actual values
+                    for key, value in kwargs.items():
+                        if isinstance(value, str):
+                            # Store actual content (limited to 1000 chars for safety)
+                            span.set_attribute(f"input.{key}", value[:1000])
+                        elif isinstance(value, list):
+                            # For lists (entities, observations), store count and items
+                            span.set_attribute(f"input.{key}_count", len(value))
+                            if value:
+                                import json
+                                span.set_attribute(f"input.{key}_items", json.dumps(value[:10]))
+                        elif isinstance(value, (int, float, bool)):
+                            span.set_attribute(f"input.{key}", value)
 
                     # Call the function
                     result = await func(*args, **kwargs)
 
                     span.set_attribute("mcp.success", True)
+
+                    # Capture output result
+                    if isinstance(result, str):
+                        span.set_attribute("output.result", result[:2000])
 
                     return result
 
