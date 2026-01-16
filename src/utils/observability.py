@@ -61,6 +61,7 @@ def setup_phoenix_tracing(
 
     try:
         # Configure endpoint (from parameter or environment)
+        # Use the standard Phoenix Cloud endpoint with headers for auth
         phoenix_endpoint = endpoint or PHOENIX_COLLECTOR_ENDPOINT
 
         if not phoenix_endpoint:
@@ -68,8 +69,10 @@ def setup_phoenix_tracing(
             return False
 
         # Register with Phoenix using arize-phoenix-otel
-        # Environment variables (PHOENIX_API_KEY, PHOENIX_COLLECTOR_ENDPOINT)
-        # are automatically picked up by the register() function
+        # The endpoint should include the protocol to avoid warnings
+        if not phoenix_endpoint.startswith(("http://", "https://")):
+            phoenix_endpoint = f"https://{phoenix_endpoint}"
+
         _tracer_provider = register(
             project_name=project_name,
             endpoint=phoenix_endpoint,
@@ -78,6 +81,11 @@ def setup_phoenix_tracing(
 
         logger.info(f"✅ Phoenix tracing configured: {phoenix_endpoint}")
         logger.info(f"📊 Phoenix UI: {PHOENIX_UI_URL}")
+
+        # Force flush to ensure traces are sent immediately during testing
+        def force_flush():
+            if _tracer_provider:
+                _tracer_provider.force_flush()
 
         return True
 
