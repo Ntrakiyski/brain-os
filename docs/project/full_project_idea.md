@@ -112,4 +112,208 @@ Brain OS uses **Live Mounting** to connect to hosted MCP servers.
 
 ***
 
+## 9. The Autonomous Engine (Future Vision)
+
+**Status**: **PLANNED** - Implementation after Obsidian sync phases complete
+
+### 9.1 Phase 3 Scheduled Updates (Pre-Autonomous Engine)
+
+**Note**: Before implementing the full Autonomous Engine described in this section, Phase 3 of the Obsidian integration adds scheduled update capabilities using internal PocketFlow agents.
+
+**Phase 3 Scope** (separate from full Autonomous Engine):
+- **Morning Briefing Agent** - Daily summaries of yesterday's memories
+- **Evening Recap Agent** - Daily reviews of today's activities
+- **Sunday Weekly Review Agent** - Weekly analysis by sector
+- **Configuration** - Environment variables (enabled/time/service type)
+- **Delivery** - Webhook notifications (Gmail/Telegram)
+
+**Architecture Difference**:
+- **Phase 3**: Fixed-time scheduled flows (cron-based, deterministic)
+- **Full Engine**: Continuous autonomous cycle (5-10 min intervals, dynamic decision-making)
+
+Phase 3 provides the foundation for autonomous thinking but does not include the full Master Agent, sub-agent specialization, or autonomous decision-making capabilities described below.
+
+### 9.1 The Heartbeat: Autonomous Decision Cycle
+
+Brain OS will run on a continuous autonomous cycle (5-10 minute cron job) that functions as the "metabolic heartbeat" of the system:
+
+```
+Every 5-10 minutes:
+┌─────────────────────────────────────────────────────────────┐
+│  1. MASTER AGENT awakens                                    │
+│  2. Queries Neo4j for high-salience memories (>0.7)         │
+│  3. Iterates through all pending tasks and decisions        │
+│  4. Analyzes patterns, priorities, and context              │
+│  5. Routes to appropriate SUB-AGENTS based on task type    │
+│  6. Sub-agents execute their specialized functions          │
+│  7. Results stored as new memories in the Synaptic Graph   │
+│  8. Cycle repeats                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Task Categories and Sub-Agent Specialization
+
+The Master Agent routes work to specialized sub-agents based on task categorization:
+
+| Category | Sub-Agent | Responsibilities |
+|----------|-----------|-------------------|
+| **Research** | The Researcher | Internet research, documentation review, competitive analysis, fact-checking |
+| **Development** | The Builder | Code generation, debugging, testing, deployment, technical implementation |
+| **Messaging** | The Communicator | Email responses, notifications, team updates, status reports |
+| **Synthesis** | The Synthesizer | Pattern recognition, insight generation, cloud creation, connecting dots |
+| **Planning** | The Strategist | Project planning, task breakdown, resource allocation, roadmap generation |
+| **Monitoring** | The Guardian | System health checks, error detection, performance monitoring, alerts |
+
+### 9.3 Autonomous Decision-Making Process
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    MASTER AGENT                                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  INPUT: High-salience memories + pending tasks          │  │
+│  │                                                          │  │
+│  │  1. FILTER: Extract memories needing action            │  │
+│  │  2. CATEGORIZE: Classify by type (research/dev/msg)     │  │
+│  │  3. PRIORITIZE: Sort by salience + deadline + urgency  │  │
+│  │  4. ROUTE: Dispatch to appropriate sub-agent           │  │
+│  │  5. VALIDATE: Review sub-agent output                  │  │
+│  │  6. STORE: Create new memory with results              │  │
+│  │                                                          │  │
+│  │  OUTPUT: New memories, completed tasks, next actions   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                            │         │
+│           ┌────────────┬────────────┬────────────┬──────────┤         │
+│           ▼            ▼            ▼            ▼          ▼         │
+│       ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐            │
+│       │Research ││Builder  ││Comm.    ││Plan     │  ...      │
+│       │Agent    ││Agent    ││Agent    ││Agent    │            │
+│       └─────────┘ └─────────┘ └─────────┘ └─────────┘            │
+│           │            │            │            │                     │
+│           ▼            ▼            ▼            ▼                     │
+│       New memories created, actions executed, tasks completed      │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 9.4 Sub-Agent Capabilities
+
+**The Researcher (Research Category)**:
+- Web search and information gathering
+- Documentation analysis and summarization
+- Competitive analysis and market research
+- Fact-checking and verification
+- Source evaluation and citation
+
+**The Builder (Development Category)**:
+- Code generation and modification
+- Debugging and error resolution
+- Test creation and execution
+- Deployment automation
+- Technical implementation decisions
+
+**The Communicator (Messaging Category)**:
+- Email drafting and responses
+- Notification management
+- Team status updates
+- Meeting preparation and summaries
+- Follow-up reminders
+
+**The Synthesizer (Synthesis Category)**:
+- Pattern recognition across memories
+- Cloud generation (Reflective insights)
+- Connection discovery between related concepts
+- Trend analysis and anomaly detection
+
+**The Strategist (Planning Category)**:
+- Project planning and task breakdown
+- Resource allocation and scheduling
+- Risk assessment and mitigation
+- Roadmap generation and milestone tracking
+
+**The Guardian (Monitoring Category)**:
+- System health monitoring
+- Error detection and alerting
+- Performance optimization
+- Security and compliance checks
+
+### 9.5 Decision Flow
+
+```
+1. AWAKEN: Cron triggers Master Agent (5-10 min interval)
+2. RETRIEVE: Query Neo4j for memories WHERE salience > 0.7 AND action_required = true
+3. ANALYZE: For each memory, determine:
+   - What type of action is needed? (category)
+   - How urgent is this? (priority based on salience + deadline)
+   - Which sub-agent is best suited?
+   - What context does the sub-agent need?
+4. DISPATCH: Send task to sub-agent with context
+5. EXECUTE: Sub-agent performs specialized function
+6. VALIDATE: Master Agent reviews output
+7. STORE: Create new memory with results
+8. UPDATE: Update original memory with action_taken = true
+9. SLEEP: Wait for next cycle
+```
+
+### 9.6 Implementation Phases for The Engine
+
+**Phase A: Master Agent Foundation**
+- Task scheduling system (cron-based, 5-10 min intervals)
+- Memory filtering and prioritization logic
+- Task categorization (research/dev/messaging/etc.)
+- Sub-agent routing system
+
+**Phase B: Sub-Agent Implementation**
+- Implement individual sub-agents
+- Specialized tool access for each agent type
+- Agent communication protocols
+- Result validation and storage
+
+**Phase C: Advanced Decision-Making**
+- Multi-step task decomposition
+- Cross-agent collaboration
+- Learning from past decisions
+- Adaptive priority adjustment
+
+**Phase D: Full Autonomy**
+- Proactive task generation
+- Self-directed goal setting
+- Autonomous project management
+- Human-in-the-loop validation only for high-impact decisions
+
+### 9.7 Technical Architecture for The Engine
+
+```
+0brainOS/
+├── src/
+│   ├── tasks/
+│   │   ├── background.py              # Current: Synaptic pruning, etc.
+│   │   ├── autonomous_cycle.py        # NEW: 5-min decision heartbeat
+│   │   └── scheduler.py               # NEW: Cron-based task scheduler
+│   ├── agents/
+│   │   ├── master_agent.py            # NEW: Master decision orchestrator
+│   │   ├── sub_agents/
+│   │   │   ├── researcher.py          # Research category
+│   │   │   ├── builder.py              # Development category
+│   │   │   ├── communicator.py        # Messaging category
+│   │   │   ├── synthesizer.py          # Synthesis category
+│   │   │   ├── strategist.py           # Planning category
+│   │   │   └── guardian.py            # Monitoring category
+│   │   └── routing/
+│   │       ├── categorizer.py         # Task categorization logic
+│   │       ├── prioritizer.py          # Priority scoring
+│   │       └── dispatcher.py           # Sub-agent routing
+│   └── flows/
+│       └── autonomous_decision.py     # PocketFlow for decision cycle
+```
+
+### 9.8 Design Principles for The Engine
+
+1. **Human Authority**: Master Agent proposes, Human decides for high-impact actions
+2. **Transparent Logging**: Every autonomous action is logged and queryable
+3. **Graceful Degradation**: If a sub-agent fails, log error and continue
+4. **Incremental Autonomy**: Start with read-only actions, gradually enable write actions
+5. **Context Preservation**: All decisions reference source memories
+6. **Audit Trail**: Every autonomous action creates a new memory
+
+---
+
 **End of Specification.**

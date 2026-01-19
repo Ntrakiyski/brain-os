@@ -460,3 +460,91 @@ async def get_bubble_count(sector: Optional[str] = None) -> int:
         count = record["bubble_count"] if record else 0
         logger.debug(f"Counted {count} bubbles" + (f" in sector {sector}" if sector else ""))
         return count
+
+
+async def update_bubble_observations(
+    bubble_id: str,
+    observations: list[str],
+    append: bool = False
+) -> Optional[BubbleResponse]:
+    """
+    Update observations on an existing bubble.
+
+    Phase 2 Sync: Used by Obsidian sync to update Neo4j with observations
+    edited in Obsidian markdown files.
+
+    Args:
+        bubble_id: The numeric node ID (element_id) of the bubble
+        observations: Updated observations list
+        append: If True, append to existing observations; if False, replace
+
+    Returns:
+        Updated BubbleResponse or None if not found
+    """
+    import re
+    conn = await get_connection()
+    now = datetime.now(timezone.utc)
+
+    # Extract numeric ID from various formats (e.g., "4:uuid:0", "5", etc.)
+    match = re.search(r'\d+', str(bubble_id))
+    if not match:
+        logger.warning(f"Invalid bubble ID format: {bubble_id}")
+        return None
+    numeric_id = int(match.group())
+
+    # Get existing bubble to check if it exists
+    existing = await get_bubble_by_id(bubble_id)
+    if not existing:
+        logger.warning(f"Bubble {bubble_id} (numeric: {numeric_id}) not found")
+        return None
+
+    # Merge or replace observations
+    if append:
+        # Append: merge new observations, avoiding duplicates
+        merged = existing.observations + [o for o in observations if o not in existing.observations]
+        final_observations = merged
+    else:
+        # Replace: use new observations directly
+        final_observations = observations
+
+    # Update via Cypher
+    cypher = """
+    MATCH (b:Bubble)
+    WHERE id(b) = $bubble_id
+    AND b.valid_to IS NULL
+    SET b.observations = $observations,
+        b.last_accessed = $now
+    RETURN b, id(b) as internal_id
+    """
+
+    async with conn.session() as session:
+        result = await session.run(
+            cypher,
+            bubble_id=numeric_id,
+            observations=final_observations,
+            now=now.isoformat()
+        )
+        record = await result.single()
+
+        if record:
+            node = record["b"]
+            logger.info(f"Updated observations for bubble {bubble_id}: {len(final_observations)} observations")
+            return BubbleResponse(
+                id=str(numeric_id),
+                content=node["content"],
+                sector=node["sector"],
+                source=node["source"],
+                salience=node["salience"],
+                created_at=datetime.fromisoformat(node["created_at"]),
+                valid_from=datetime.fromisoformat(node["valid_from"]),
+                valid_to=None,
+                memory_type=node.get("memory_type", "thinking"),
+                activation_threshold=node.get("activation_threshold", 0.65),
+                entities=node.get("entities", []),
+                observations=final_observations,
+                accessed_count=node.get("access_count", 0),
+                last_accessed=now
+            )
+
+    logger.warning(f"Failed to update observations for bubble {bubble_id}")
+    return None
