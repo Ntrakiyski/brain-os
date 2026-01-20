@@ -30,9 +30,6 @@ services:
       - EMAIL_WEBHOOK_URL=${EMAIL_WEBHOOK_URL}
       - EMAIL_AUTHORIZATION=${EMAIL_AUTHORIZATION}
 
-      # Obsidian Integration (deployed at https://obsidian-mcp.trakiyski.work)
-      - OBSIDIAN_MCP_URL=${OBSIDIAN_MCP_URL:-https://obsidian-mcp.trakiyski.work/mcp}
-
       # Phoenix Cloud Observability (Optional - set in Coolify environment variables)
       - PHOENIX_COLLECTOR_ENDPOINT=${PHOENIX_COLLECTOR_ENDPOINT}
       - PHOENIX_API_KEY=${PHOENIX_API_KEY}

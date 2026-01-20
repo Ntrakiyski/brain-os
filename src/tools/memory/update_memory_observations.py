@@ -1,9 +1,6 @@
 """
 Update memory observations tool.
 Updates observations on an existing memory in Neo4j.
-
-Phase 2 Sync: Used by Obsidian sync to update Neo4j with observations
-edited in Obsidian markdown files.
 """
 
 import logging
@@ -35,13 +32,13 @@ def register_update_memory_observations(mcp) -> None:
         """
         Update observations on an existing memory in Neo4j.
 
-        **Use this to sync observations edited in Obsidian back to Neo4j.**
+        **Use this to add or update observations on a stored memory.**
 
         Common Patterns:
 
         **Replace observations** (default):
         - Observations list will completely replace existing observations
-        - Use when full sync from Obsidian is needed
+        - Use when you want to completely refresh the observations list
 
         **Append observations** (append=True):
         - New observations are added to existing ones

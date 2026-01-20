@@ -106,52 +106,8 @@ def register_create_memory(mcp) -> None:
                 f"Salience={result.salience}, Type={memory_type}"
             )
 
-            # Phase 5.1: Sync to Obsidian (if configured)
-            obsidian_sync_result = ""
-            try:
-                from src.utils.obsidian_client import sync_to_obsidian
-                from src.utils.entity_naming import generate_entity_name
-
-                entity_name = generate_entity_name(
-                    content=content,
-                    entities=entities,
-                    sector=sector,
-                )
-
-                obsidian_metadata = {
-                    "salience": salience,
-                    "memory_type": memory_type,
-                    "neo4j_id": str(result.id),
-                    "created": result.created_at.isoformat(),
-                    "source": source,
-                    "sector": sector,
-                }
-
-                sync_success = await sync_to_obsidian(
-                    entity_name=entity_name,
-                    entity_type=sector,
-                    content=content,
-                    observations=observations,
-                    metadata=obsidian_metadata,
-                )
-
-                if sync_success:
-                    obsidian_sync_result = f"\n- Obsidian: {entity_name}.md"
-                    logger.info(f"Successfully synced to Obsidian: {entity_name}")
-                else:
-                    obsidian_sync_result = "\n⚠️ Obsidian sync: Unavailable (Neo4j stored)"
-                    logger.warning(f"Obsidian sync failed for memory {result.id}")
-
-            except ImportError:
-                # Obsidian utilities not available - skip sync
-                logger.debug("Obsidian client not available, skipping sync")
-            except Exception as e:
-                # Obsidian sync failed - don't fail the entire operation
-                logger.warning(f"Obsidian sync error: {e}")
-                obsidian_sync_result = "\n⚠️ Obsidian sync: Failed (Neo4j stored)"
-
             return (
-                f"Memory stored successfully!{obsidian_sync_result}\n"
+                f"Memory stored successfully!\n"
                 f"- Neo4j ID: {result.id}\n"
                 f"- Sector: {result.sector}\n"
                 f"- Created: {result.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"

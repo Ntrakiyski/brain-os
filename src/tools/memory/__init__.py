@@ -21,7 +21,6 @@ from src.tools.memory.query_memories import register_query_memories
 
 # Phase 2: Sync tools
 from src.tools.memory.update_memory_observations import register_update_memory_observations
-from src.tools.memory.sync_with_obsidian import register_sync_with_obsidian
 
 # Deletion tools
 from src.tools.memory.delete_memory import register_delete_memory
@@ -53,7 +52,6 @@ def register_memory_tools(mcp) -> None:
 
     # Phase 2: Sync tools
     register_update_memory_observations(mcp)
-    register_sync_with_obsidian(mcp)
 
     # Deletion tools
     register_delete_memory(mcp)

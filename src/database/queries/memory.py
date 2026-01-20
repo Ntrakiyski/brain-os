@@ -361,17 +361,12 @@ async def delete_bubble(bubble_id: str) -> bool:
         return False
 
 
-async def delete_all_bubbles(
-    cleanup_obsidian: bool = False
-) -> int:
+async def delete_all_bubbles() -> int:
     """
     Delete all active bubbles from the database.
 
     Uses soft deletion by setting valid_to timestamp on all bubbles.
     This preserves audit trail and maintains temporal evolution tracking.
-
-    Args:
-        cleanup_obsidian: If True, also delete corresponding Obsidian .md files
 
     Returns:
         Number of bubbles deleted
@@ -379,26 +374,6 @@ async def delete_all_bubbles(
     conn = await get_connection()
     now = datetime.now(timezone.utc)
 
-    # First, get all entity names before deletion (for Obsidian cleanup)
-    entity_names = []
-    if cleanup_obsidian:
-        cypher_get_names = """
-        MATCH (b:Bubble)
-        WHERE b.valid_to IS NULL
-        RETURN b
-        """
-        async with conn.session() as session:
-            result = await session.run(cypher_get_names)
-            async for record in result:
-                from src.utils.entity_naming import generate_entity_name
-                bubble = record["b"]
-                content = bubble.get("content", "")
-                entities = bubble.get("entities", [])
-                sector = bubble.get("sector", "Semantic")
-                entity_name = generate_entity_name(content, entities, sector)
-                entity_names.append(entity_name)
-
-    # Now perform the soft deletion
     cypher = """
     MATCH (b:Bubble)
     WHERE b.valid_to IS NULL
@@ -411,15 +386,6 @@ async def delete_all_bubbles(
         record = await result.single()
         count = record["deleted_count"] if record else 0
         logger.info(f"Deleted all {count} bubbles")
-
-    # Cleanup Obsidian if requested
-    if entity_names and cleanup_obsidian:
-        try:
-            from src.utils.obsidian_client import cleanup_obsidian_entities
-            await cleanup_obsidian_entities(entity_names, archive=False)
-            logger.info(f"Cleaned up {len(entity_names)} Obsidian entities")
-        except Exception as e:
-            logger.warning(f"Failed to cleanup Obsidian entities: {e}")
 
     return count
 
@@ -469,9 +435,6 @@ async def update_bubble_observations(
 ) -> Optional[BubbleResponse]:
     """
     Update observations on an existing bubble.
-
-    Phase 2 Sync: Used by Obsidian sync to update Neo4j with observations
-    edited in Obsidian markdown files.
 
     Args:
         bubble_id: The numeric node ID (element_id) of the bubble

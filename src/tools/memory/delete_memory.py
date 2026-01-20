@@ -136,12 +136,7 @@ Audit trail is preserved in the database.
             return f"## Error deleting memory: {str(e)}"
 
     @mcp.tool
-    async def delete_all_memories(
-        cleanup_obsidian: bool = Field(
-            default=False,
-            description="If True, also delete corresponding Obsidian .md files"
-        ),
-    ) -> str:
+    async def delete_all_memories() -> str:
         """
         Delete ALL memories from the Synaptic Graph.
 
@@ -152,9 +147,6 @@ Audit trail is preserved in the database.
         - Preserves audit trail
         - Maintains temporal evolution tracking
         - Allows for potential recovery (with database access)
-
-        Obsidian Integration:
-        - cleanup_obsidian: If True, also deletes corresponding .md files from Obsidian vault
 
         Returns:
         - Success: Number of memories deleted
@@ -175,23 +167,11 @@ Nothing to delete.
 """
 
             # Perform the deletion
-            deleted_count = await delete_all_bubbles(
-                cleanup_obsidian=cleanup_obsidian
-            )
-
-            obsidian_message = ""
-            if cleanup_obsidian:
-                obsidian_message = f"""
-**Obsidian**: All corresponding .md files deleted
-"""
-            else:
-                obsidian_message = """
-**Obsidian**: .md files NOT deleted (set cleanup_obsidian=True to delete)
-"""
+            deleted_count = await delete_all_bubbles()
 
             return f"""## All Memories Deleted Successfully
 
-**Deleted**: {deleted_count} memories{obsidian_message}
+**Deleted**: {deleted_count} memories
 
 The Synaptic Graph has been cleared.
 All memories have been soft-deleted (valid_to timestamp set).
