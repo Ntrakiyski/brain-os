@@ -48,3 +48,8 @@ docker-compose.local.yml
 
 # Package manager
 uv.lock
+
+# MCP testing scripts (local testing only)
+test_mcp_tools.py
+test_mcp_tools_requirements.txt
+test_results_*.json
