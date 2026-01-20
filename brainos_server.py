@@ -17,8 +17,8 @@ sys.path.insert(0, str(project_root))
 
 # Import tool registration functions
 from src.tools import register_memory_tools, register_agent_tools
-from src.tools.notifications import register_notification_tools
-from src.tools.monitoring import register_monitoring_tools
+# from src.tools.notifications import register_notification_tools
+# from src.tools.monitoring import register_monitoring_tools
 
 # Import observability to trigger Phoenix setup (auto-initializes on import)
 from src.utils import observability
@@ -129,8 +129,8 @@ async def health_check(request) -> JSONResponse:
 # Register all tool modules
 register_memory_tools(mcp)
 register_agent_tools(mcp)
-register_notification_tools(mcp)
-register_monitoring_tools(mcp)
+# register_notification_tools(mcp)
+# register_monitoring_tools(mcp)
 
 
 # =============================================================================
